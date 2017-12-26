@@ -21,7 +21,6 @@ module routines
    INTEGER :: i_seed
    INTEGER, DIMENSION(:), ALLOCATABLE :: a_seed
    INTEGER, DIMENSION(1:8) :: dt_seed
-   ! ----- end of variables for seed setting -----
 
    ! ----- Set up random seed portably -----
    CALL RANDOM_SEED(size=i_seed)
@@ -31,7 +30,6 @@ module routines
    a_seed(i_seed)=dt_seed(8); a_seed(1)=dt_seed(8)*dt_seed(7)*dt_seed(6)
    CALL RANDOM_SEED(put=a_seed)
    DEALLOCATE(a_seed)
-   ! ----- Done setting up random seed -----
   end subroutine set_random_seed
 
   subroutine choose_p(G,d,rnd,idx)
@@ -66,6 +64,8 @@ module routines
      endif
    end do
   end subroutine choose_p
+
+
 
 
 !!! ------------------------- !!!
@@ -164,7 +164,7 @@ module routines
    real, dimension(3,3), intent(in) :: bt
    real, dimension(3) :: xc
 
-       xc(:) = 0.0                               ! initialisation
+       xc(:) = 0.0 
 
        xc(1) = (xpp(1)*bt(1,1)+xpp(2)*bt(2,1)+xpp(3)*bt(3,1))
        xc(2) = (xpp(1)*bt(1,2)+xpp(2)*bt(2,2)+xpp(3)*bt(3,2))
@@ -266,7 +266,7 @@ module routines
    real, dimension(2,2), intent(in) :: bt
    real, dimension(2) :: xc
 
-       xc(:) = 0.0                               ! initialisation
+       xc(:) = 0.0   
 
 
        xc(1) = xpp(1)*bt(1,1)+xpp(2)*bt(2,1)
