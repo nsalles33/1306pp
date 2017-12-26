@@ -3,9 +3,11 @@ program main_test
  real :: r
  real, dimension(3) :: A, B
  real :: Lx, Ly, Lz, dist, rnd, k
- real, dimension(3,3) :: BT
- integer :: j,i,cnt
+ real, dimension(3,3) :: BT,latvecs
+ integer :: j,i,cnt,fd
  real, dimension(6) :: G,G1
+ real, allocatable :: coords(:,:)
+ integer, allocatable :: typ(:)
 
 ! --- test periodic -----
 write(*,*) 'test periodic(r)'
@@ -76,22 +78,22 @@ G(4)=0.2
 G(5)=0.4
 G(6)=0.4
 
-call random_number(rnd)
-rnd=rnd*sum(G)
-k=0
-cnt=0
-write(*,*) 'rnd',rnd
-do i=1,size(G)
-  if (k<rnd) then
-  cnt=cnt+1
-  k=k+G(i)
-  write(*,*) 'k',k
- else
-  exit
- endif
-end do
-write(*,*) G
-write(*,*) cnt,G(cnt)
+!call random_number(rnd)
+!rnd=rnd*sum(G)
+!k=0
+!cnt=0
+!write(*,*) 'rnd',rnd
+!do i=1,size(G)
+!  if (k<rnd) then
+!  cnt=cnt+1
+!  k=k+G(i)
+!  write(*,*) 'k',k
+! else
+!  exit
+! endif
+!end do
+!write(*,*) G
+!write(*,*) cnt,G(cnt)
 
 
 
@@ -100,4 +102,22 @@ write(*,*)
 call choose_p(G,6,rnd,cnt)
 write(*,*) rnd
 write(*,*) cnt
+
+!!!!!!!!!------------
+write(*,*)
+fd=901
+open(unit=fd,file='sites.in',status='old')
+call read_latvecs(fd,latvecs)
+write(*,*) 'latvecs:'
+do i=1,3
+ write(*,*) latvecs(i,:)
+end do
+
+call read_sites(fd,typ,coords)
+write(*,*) 'types',typ
+write(*,*) 'coords:'
+do i=1,size(coords)/3
+  write(*,*) coords(i,:)
+end do
+
 end program main_test

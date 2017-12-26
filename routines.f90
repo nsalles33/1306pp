@@ -32,6 +32,32 @@ module routines
    DEALLOCATE(a_seed)
   end subroutine set_random_seed
 
+  subroutine read_latvecs(fd,latvecs)
+   implicit none
+   integer :: i
+   integer, intent(in) :: fd
+   real, dimension(3,3), intent(out) :: latvecs
+   
+   do i=1,3
+    read(fd,*) latvecs(i,1), latvecs(i,2), latvecs(i,3)
+   end do
+  end subroutine read_latvecs
+
+  subroutine read_sites(fd,site_type, site_coords)
+   implicit none
+   integer, intent(in) :: fd  !! file descriptor (unit) number
+   integer :: i, Nsites
+   integer, allocatable, intent(out) :: site_type(:)
+   real, allocatable, intent(out) :: site_coords(:,:)
+
+   read(fd,*) Nsites
+   allocate( site_type( 1:Nsites ) )
+   allocate( site_coords( 1:Nsites, 1:3 ) )
+   do i=1, Nsites
+    read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2), site_coords(i,3)
+   end do
+  end subroutine read_sites
+
   subroutine choose_p(G,d,rnd,idx)
   !-----------------------------------------
   ! choose some event from the list of probabilities which is summed up
