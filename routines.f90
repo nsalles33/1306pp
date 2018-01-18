@@ -32,31 +32,6 @@ module routines
    DEALLOCATE(a_seed)
   end subroutine set_random_seed
 
-  subroutine read_latvecs(fd,latvecs)
-   implicit none
-   integer :: i
-   integer, intent(in) :: fd
-   real, dimension(3,3), intent(out) :: latvecs
-   
-   do i=1,3
-    read(fd,*) latvecs(i,1), latvecs(i,2), latvecs(i,3)
-   end do
-  end subroutine read_latvecs
-
-  subroutine read_sites(fd,site_type, site_coords)
-   implicit none
-   integer, intent(in) :: fd  !! file descriptor (unit) number
-   integer :: i, Nsites
-   integer, allocatable, intent(out) :: site_type(:)
-   real, allocatable, intent(out) :: site_coords(:,:)
-
-   read(fd,*) Nsites
-   allocate( site_type( 1:Nsites ) )
-   allocate( site_coords( 1:Nsites, 1:3 ) )
-   do i=1, Nsites
-    read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2), site_coords(i,3)
-   end do
-  end subroutine read_sites
 
   subroutine choose_p(G,d,rnd,idx)
   !-----------------------------------------
@@ -105,6 +80,39 @@ module routines
 !    3-dimensional routines     ! 
 !                               !
 !!! ------------------------- !!!
+
+  subroutine read_latvecs3D(fd,latvecs)
+   implicit none
+   integer :: i
+   integer, intent(in) :: fd
+   real, dimension(3,3), intent(out) :: latvecs
+   
+   do i=1,3
+    read(fd,*) latvecs(i,1), latvecs(i,2), latvecs(i,3)
+   end do
+  end subroutine read_latvecs3D
+
+
+  subroutine read_sites3D(fd,site_type, site_coords)
+  !---------------------
+  ! read input file of the 3D sites, file structure:
+  ! 
+  ! integer(number of sites)
+  ! integer(site_type) coord_x coord_y coord_z
+  !
+   implicit none
+   integer, intent(in) :: fd  !! file descriptor (unit) number
+   integer :: i, Nsites
+   integer, allocatable, intent(out) :: site_type(:)
+   real, allocatable, intent(out) :: site_coords(:,:)
+
+   read(fd,*) Nsites
+   allocate( site_type( 1:Nsites ) )
+   allocate( site_coords( 1:Nsites, 1:3 ) )
+   do i=1, Nsites
+    read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2), site_coords(i,3)
+   end do
+  end subroutine read_sites3D
 
 
   subroutine pbcdist3D(A,B,Lx,Ly,Lz,dist)
@@ -218,6 +226,40 @@ module routines
 !    2-dimensional routines      !
 !                                !
 !!! -------------------------- !!!
+
+
+  subroutine read_latvecs2D(fd,latvecs)
+   implicit none
+   integer :: i
+   integer, intent(in) :: fd
+   real, dimension(2,2), intent(out) :: latvecs
+   
+   do i=1,2
+    read(fd,*) latvecs(i,1), latvecs(i,2)
+   end do
+  end subroutine read_latvecs2D
+
+
+  subroutine read_sites2D(fd,site_type, site_coords)
+  !---------------------
+  ! read input file of the 2D sites, file structure:
+  ! 
+  ! integer(number of sites)
+  ! integer(site_type) coord_x coord_y
+  !
+   implicit none
+   integer, intent(in) :: fd  !! file descriptor (unit) number
+   integer :: i, Nsites
+   integer, allocatable, intent(out) :: site_type(:)
+   real, allocatable, intent(out) :: site_coords(:,:)
+
+   read(fd,*) Nsites
+   allocate( site_type( 1:Nsites ) )
+   allocate( site_coords( 1:Nsites, 1:2 ) )
+   do i=1, Nsites
+    read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2)
+   end do
+  end subroutine read_sites2D
 
 
   subroutine pbcdist2D(A,B,Lx,Ly,dist)
