@@ -104,7 +104,7 @@ write(*,*) 'vector of event probabilities:'
 write(*,'(F5.2)') G(:)
 write(*,*) 'random number: ',rnd
 call choose_p(G,6,rnd,cnt)
-write(*,*) 'random number, scaled to sum(G): ',rnd
+write(*,*) 'random number, scaled to sum(G): ',rnd*sum(G)
 write(*,*) 'index of chosen event: ',cnt
 
 !!!!!!!!!------------

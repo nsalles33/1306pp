@@ -62,27 +62,33 @@ module routines
   !-----------------------------------------
   ! choose some event from the list of probabilities which is summed up
   ! G1--G2--G3----G4-----G5-----G6------------G7
-  ! "should they be sorted into some order?"
+  ! "should the probabilities be sorted into some order?"
   ! ----------------------------------------
   ! G   ==> vector containing the probability values of events
   ! d   ==> dimension of vector G
   ! rnd ==> input random number
   ! idx ==> output index of the event chosen
+  ! -------------
+  ! k    ==> dummy sum of the smaller G values
+  ! rnd1 ==> rnd scaled by sum(G), for testing remove this and put rnd intent(inout)
   !-----------------------------------------
    implicit none
    integer, intent(in) :: d
    real, dimension(d), intent(in) :: G
-   real, intent(inout) :: rnd
+   real, intent(in) :: rnd
    integer, intent(out) :: idx
 
-   real :: k
+   real :: k,rnd1
    integer :: i
    
+!! do we normalize the G vector by sum(G)? or it's ok like this? 
+!! now it's opposite, the rnd is scaled by sum(G)... 
+
    k=0
-   rnd=rnd*sum(G)
+   rnd1=rnd*sum(G)
    idx=0
    do i=1,d
-     if ( k < rnd ) then
+     if ( k < rnd1 ) then
        idx = idx + 1
        k = k + G(i)
      else
