@@ -9,7 +9,9 @@ module routines
   !--------------------
   ! read a line, makes possible to use # for comment lines, skips empty lines, 
   !  is pretty much a copy from QE.
-  !
+  !---------
+  ! fd ==> file descriptor
+  ! line ==> what it reads
    implicit none
    integer, intent(in) :: fd
    character(len=*), intent(out) :: line
@@ -34,6 +36,8 @@ module routines
   !---------------------
   ! get the total number of sites
   !---------------------
+  ! fd_sites ==> file descriptor of the sites file
+  ! nsites ==> output number of sites
    implicit none
    integer, intent(in) :: fd_sites
    integer, intent(out) :: nsites
@@ -59,6 +63,8 @@ module routines
   !-------------------
   ! get total number of events
   !-------------------
+  ! fd_events ==> file descriptor of events file
+  ! nevt ==> number of events
    implicit none
    integer, intent(in) :: fd_events
    integer, intent(out) :: nevt
@@ -71,7 +77,7 @@ module routines
      line = trim ( adjustl ( line ) )
      if ( line(1:4) == 'nevt' ) then
        line = trim ( adjustl ( line(5:) ) )
-       if (line(1:1)=='=') line=trim(adjustl(line(2:)))
+       if (line(1:1)=='=') line=trim(adjustl(line(2:)))  !! cut away the '=' if present
        read(line,*) nevt
        eof = .true.
      endif
@@ -99,6 +105,8 @@ module routines
    character(len=256) :: line
    logical :: eof
  
+!!!!!!!!!!!!!!!!!!!!! this part is now obsolete since input file was changed to
+!!!!!!!!!!!!!!!!!!!! include the total number of events !!!!!!!!!!!!!!!!!
    eof = .false.
    do while ( .not. eof )
      call read_line( fd, line, eof )
@@ -111,6 +119,7 @@ module routines
      endif
    end do
    rewind(fd)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
    if( present(nevt)) nevt=ievt
 
@@ -137,6 +146,13 @@ module routines
   !-------------------------------------
   ! extract the initial and final coordinates of the chosen event
   !-------------------------------------
+  ! fd ==> file descriptor of events file
+  ! ev_idx ==> index of the event to look up
+  ! ev_init_nat ==> initial number of atoms in an event
+  ! ev_final_nat ==> final number of atoms in an event - could differ from initial!!!!
+  ! ev_init_typ, ev_final_typ ==> initial and final vectors of type of atoms
+  ! ev_init_coord ==> initial coords of all atoms in an event
+  ! ev_final_coord ==> final coords of all atoms in an event
    implicit none
    integer, intent(in) :: fd
    integer, intent(in) :: ev_idx
@@ -147,6 +163,8 @@ module routines
    integer, allocatable, intent(out) :: ev_init_typ(:), ev_final_typ(:)
    real, allocatable, intent(out) :: ev_init_coord(:,:), ev_final_coord(:,:)
 
+!!!! this still relies on the events being tagged by numbers e.g. @3
+!! could introduce a counter on events...more simple
    eof=.false.
    do while (.not. eof)
      call read_line(fd,line,eof)
@@ -291,6 +309,7 @@ module routines
   ! Transformation matrix from r1 to r2
   ! A r1 = r2
   !--------------------------
+  ! using intrinsic fortran functions to achieve the same as get_tf3D
    implicit none
    real, dimension(3), intent(in) :: r1, r2
    real, dimension(3,3), intent(out) :: A
@@ -335,11 +354,16 @@ module routines
 
 
   subroutine read_sites3D_new(fd_sites, nsites,site_hash, coord)
+  !------------------------------
+  ! reading a more fancy site file, in which sites begin with a 'begin' line, 
+  !------------------------------
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!! how to allocate site_hash and coord somewhere else ???
    implicit none
    integer, intent(in) :: fd_sites
+   integer, intent(in) :: nsites
    integer, allocatable, intent(out) :: site_hash(:)
    real, allocatable, intent(out) :: coord(:,:)
-   integer, intent(in) :: nsites
    integer :: isite
    character(len=64) :: line
    logical :: eof
@@ -605,6 +629,7 @@ module routines
   ! get the transfer matrix from r1 to r2
   !   A r1 = r2
   !-------------------
+  ! using intrinsic fortran function to do the same as get_tf3D
    implicit none
    real, dimension(2), intent(in) :: r1,r2
    real, dimension(2,2), intent(out) :: A
