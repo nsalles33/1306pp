@@ -3,7 +3,10 @@ objects = routines.o maintest.o
 flags = -O
 double = -fdefault-real-8
 
-all: maintest.x
+all: maintest.x hashtest.x
+
+hashtest.x : routines.o hashtest.o
+	$(compiler) $(double) -o hashtest.x routines.o hashtest.o
 
 maintest.x : $(objects)
 	$(compiler) $(double) -o maintest.x $(objects)

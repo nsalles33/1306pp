@@ -4,6 +4,187 @@ module routines
 
  contains
 
+
+  subroutine read_line(fd, line, end_of_file)
+  !--------------------
+  ! read a line, makes possible to use # for comment lines, skips empty lines, 
+  !  is pretty much a copy from QE.
+  !
+   implicit none
+   integer, intent(in) :: fd
+   character(len=*), intent(out) :: line
+   logical, optional, intent(out) :: end_of_file
+   logical :: tend
+
+   tend = .false.
+101   read(fd,fmt='(A256)',END=111) line
+      if(line == ' ' .or. line(1:1) == '#') go to 101
+      go to 105
+111   tend = .true.
+      go to 105
+105   continue
+
+      if( present(end_of_file)) then
+        end_of_file = tend
+      endif
+  end subroutine read_line
+
+
+  subroutine get_nsites(fd_sites,nsites)
+  !---------------------
+  ! get the total number of sites
+  !---------------------
+   implicit none
+   integer, intent(in) :: fd_sites
+   integer, intent(out) :: nsites
+   logical :: eof
+   character(len=64) :: line
+
+    eof=.false.
+    do while (.not.eof)
+      call read_line(fd_sites,line,eof)
+      line = trim(adjustl(line))
+      if(line(1:6)=='nsites') then
+        line=trim(adjustl(line(7:)))
+        if (line(1:1)=='=') line=trim(adjustl(line(2:)))
+        read(line,*) nsites
+        eof=.true.
+      endif
+    end do
+    rewind(fd_sites)
+  end subroutine get_nsites
+
+
+  subroutine get_nevt(fd_events,nevt)
+  !-------------------
+  ! get total number of events
+  !-------------------
+   implicit none
+   integer, intent(in) :: fd_events
+   integer, intent(out) :: nevt
+   logical :: eof
+   character(len=64) :: line
+
+   eof = .false.
+   do while ( .not. eof )
+     call read_line( fd_events, line, eof )
+     line = trim ( adjustl ( line ) )
+     if ( line(1:4) == 'nevt' ) then
+       line = trim ( adjustl ( line(5:) ) )
+       if (line(1:1)=='=') line=trim(adjustl(line(2:)))
+       read(line,*) nevt
+       eof = .true.
+     endif
+   end do
+   rewind(fd_events)
+  end subroutine get_nevt
+
+
+  subroutine get_hash_prob(fd,hash1,hash2,prob,nevt)
+  !-----------------------
+  ! parse through the event input file and extract the total number of events.
+  ! It is given by 'nevt #', probably in the first line.
+  !
+  ! In the second run, Parse through events input and extract the initial and
+  !  final hash of an event, and
+  ! the probability of this event. The line with this info should be right under the
+  ! line with '@number' of an event, keep this number as ievt (index of event).
+  !-----------------------
+   implicit none
+   integer, intent(in) :: fd
+   integer, optional, intent(out) :: nevt
+   integer, allocatable, intent(out) :: hash1(:), hash2(:)
+   real, allocatable, intent(out) :: prob(:)
+   integer :: ievt
+   character(len=256) :: line
+   logical :: eof
+ 
+   eof = .false.
+   do while ( .not. eof )
+     call read_line( fd, line, eof )
+     line = trim ( adjustl ( line ) )   !! to get rid of surrounding spaces
+     if ( line(1:4) == 'nevt' ) then
+       line = trim ( adjustl ( line(5:) ) )  !! get rid of 'nevt'
+       if (line(1:1)=='=') line=trim(adjustl(line(2:)))
+       read(line,*) ievt  !! get number from character
+       eof = .true.
+     endif
+   end do
+   rewind(fd)
+   
+   if( present(nevt)) nevt=ievt
+
+   allocate(hash1(1:nevt))
+   allocate(hash2(1:nevt))
+   allocate(prob(1:nevt))
+
+   eof = .false.
+   do while ( .not. eof )
+     call read_line( fd, line, eof )
+     line = trim ( adjustl ( line ) ) 
+     if ( line(1:1) == '@' ) then
+       line = trim ( adjustl ( line(2:) ) )   !! to get rid of '@' and possible spaces
+       read(line,*) ievt
+       read(fd,*) hash1(ievt), hash2(ievt), prob(ievt)
+     endif
+   end do
+   rewind(fd)
+  end subroutine get_hash_prob
+
+
+  subroutine get_ev_coord( fd, ev_idx, ev_init_nat, ev_init_typ, ev_init_coord, &
+                                       ev_final_nat, ev_final_typ, ev_final_coord )
+  !-------------------------------------
+  ! extract the initial and final coordinates of the chosen event
+  !-------------------------------------
+   implicit none
+   integer, intent(in) :: fd
+   integer, intent(in) :: ev_idx
+   character(len=256) :: line
+   logical :: eof
+   integer :: ievt, i
+   integer, intent(out) :: ev_init_nat, ev_final_nat
+   integer, allocatable, intent(out) :: ev_init_typ(:), ev_final_typ(:)
+   real, allocatable, intent(out) :: ev_init_coord(:,:), ev_final_coord(:,:)
+
+   eof=.false.
+   do while (.not. eof)
+     call read_line(fd,line,eof)
+     line = trim ( adjustl (line) )
+     if ( line(1:1) == '@' ) read(line(2:),*) ievt
+     !!! get the wanted event given by ev_idx
+     if (ievt == ev_idx) then
+       do while (.not.eof)
+         call read_line(fd,line,eof)
+         line = trim ( adjustl (line) )
+         if ( line(1:13) =='begin initial' ) then
+           !!! read initial configuration
+           read(fd,*) ev_init_nat
+           allocate(ev_init_typ(1:ev_init_nat))
+           allocate(ev_init_coord(1:ev_init_nat,1:3))
+           do i=1,ev_init_nat
+             read(fd,*) ev_init_typ(i),ev_init_coord(i,1), &
+                           ev_init_coord(i,2), ev_init_coord(i,3)
+           end do
+         elseif( line(1:11)=='begin final') then
+           !!! read final configuration
+           read(fd,*) ev_final_nat
+           allocate(ev_final_typ(1:ev_final_nat))
+           allocate(ev_final_coord(1:ev_final_nat,1:3))
+           do i=1,ev_final_nat
+             read(fd,*) ev_final_typ(i), ev_final_coord(i,1),&
+                           ev_final_coord(i,2), ev_final_coord(i,3)
+           end do
+           !!! finished reading all necessary, break the loop
+           eof=.true.
+         endif
+       end do
+     endif
+   end do
+   rewind(fd)
+  end subroutine get_ev_coord
+
+
   subroutine periodic(c)
   !--------------------------------
   ! periodic boundary conditions in "crystal" coordinates
@@ -15,6 +196,7 @@ module routines
 
    return
   end subroutine periodic
+
 
   subroutine set_random_seed()
    ! ----- setting a random seed, based on current time -----
@@ -81,6 +263,42 @@ module routines
 !                               !
 !!! ------------------------- !!!
 
+  subroutine get_tf3D(r2, r1, A)
+  !------------------------
+  ! get the transformation matrix from r2 to r1 such that
+  !       A r2 = r1
+  !------------------------
+   implicit none
+   real, dimension(3), intent(in) :: r2
+   real, dimension(3), intent(in) :: r1
+   real, dimension(3,3), intent(out) :: A
+
+   A(1,1) = r1(1)*r2(1)
+   A(1,2) = r1(1)*r2(2)
+   A(1,3) = r1(1)*r2(3)
+   A(2,1) = r1(2)*r2(1)
+   A(2,2) = r1(2)*r2(2)
+   A(2,3) = r1(2)*r2(3)
+   A(3,1) = r1(3)*r2(1)
+   A(3,2) = r1(3)*r2(2)
+   A(3,3) = r1(3)*r2(3)
+ 
+  end subroutine get_tf3D
+
+ 
+  subroutine get_tf3D_short(r1,r2,A)
+  !--------------------------
+  ! Transformation matrix from r1 to r2
+  ! A r1 = r2
+  !--------------------------
+   implicit none
+   real, dimension(3), intent(in) :: r1, r2
+   real, dimension(3,3), intent(out) :: A
+
+   A = spread (r2, dim=2, ncopies=3 ) * spread( r1, dim=1, ncopies=3 )
+  end subroutine get_tf3D_short
+ 
+
   subroutine read_latvecs3D(fd,latvecs)
    implicit none
    integer :: i
@@ -93,7 +311,7 @@ module routines
   end subroutine read_latvecs3D
 
 
-  subroutine read_sites3D(fd,site_type, site_coords)
+  subroutine read_sites3D(fd,site_type, site_coords, Nsites)
   !---------------------
   ! read input file of the 3D sites, file structure:
   ! 
@@ -102,7 +320,8 @@ module routines
   !
    implicit none
    integer, intent(in) :: fd  !! file descriptor (unit) number
-   integer :: i, Nsites
+   integer :: i
+   integer, intent(out) :: Nsites
    integer, allocatable, intent(out) :: site_type(:)
    real, allocatable, intent(out) :: site_coords(:,:)
 
@@ -113,6 +332,33 @@ module routines
     read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2), site_coords(i,3)
    end do
   end subroutine read_sites3D
+
+
+  subroutine read_sites3D_new(fd_sites, nsites,site_hash, coord)
+   implicit none
+   integer, intent(in) :: fd_sites
+   integer, allocatable, intent(out) :: site_hash(:)
+   real, allocatable, intent(out) :: coord(:,:)
+   integer, intent(in) :: nsites
+   integer :: isite
+   character(len=64) :: line
+   logical :: eof
+   
+   if (.not. allocated(site_hash)) allocate(site_hash(1:nsites))
+   if (.not. allocated(coord)) allocate(coord(1:nsites,1:3))
+    eof=.false.
+    do while (.not.eof)
+      call read_line(fd_sites,line,eof)
+      line=trim(adjustl(line))
+      if (line(1:5)=='begin') then
+        do isite=1,nsites
+          read(fd_sites,*) site_hash(isite), coord(isite,1), coord(isite,2), coord(isite,3)
+        end do
+        eof=.true.
+       endif
+    end do
+    rewind(fd_sites)
+  end subroutine read_sites3D_new
 
 
   subroutine pbcdist3D(A,B,Lx,Ly,Lz,dist)
@@ -353,5 +599,17 @@ module routines
        return
   end subroutine crist_to_cart2D
 
+
+  subroutine get_tf2D(r1,r2,A)
+  !-------------------
+  ! get the transfer matrix from r1 to r2
+  !   A r1 = r2
+  !-------------------
+   implicit none
+   real, dimension(2), intent(in) :: r1,r2
+   real, dimension(2,2), intent(out) :: A
+
+    A = spread(r2,dim=2,ncopies=2) * spread(r1,dim=1,ncopies=2)
+  end subroutine get_tf2D
 
 end module routines
