@@ -203,17 +203,57 @@ module routines
   end subroutine get_ev_coord
 
 
+!  subroutine periodic3D(c)
+!  !--------------------------------
+!  ! periodic boundary conditions in "crystal" coordinates
+!  !--------------------------------
+!   implicit none
+!   real, dimension(3) :: c
+!   if(c(1) < (-0.5)) c(1) = c(1) + 1.0
+!   if(c(1) >= 0.5) c(1) = c(1) - 1.0
+!   if(c(2) < (-0.5)) c(2) = c(2) + 1.0
+!   if(c(2) >= 0.5) c(2) = c(2) - 1.0
+!   if(c(3) < (-0.5)) c(3) = c(3) + 1.0
+!   if(c(3) >= 0.5) c(3) = c(3) - 1.0
+! 
+!   return
+!  end subroutine periodic3D
+! 
+! 
+!  subroutine periodic2D(c)
+!  !--------------------------------
+!  ! periodic boundary conditions in "crystal" coordinates
+!  !--------------------------------
+!   implicit none
+!   real, dimension(2) :: c
+!   if(c(1) < (-0.5)) c(1) = c(1) + 1.0
+!   if(c(1) >= 0.5) c(1) = c(1) - 1.0
+!   if(c(2) < (-0.5)) c(2) = c(2) + 1.0
+!   if(c(2) >= 0.5) c(2) = c(2) - 1.0
+! 
+!   return
+!  end subroutine periodic2D
+
+
   subroutine periodic(c)
   !--------------------------------
-  ! periodic boundary conditions in "crystal" coordinates
+  ! general periodic boundary condition, for 1, 2 or 3 dimensional vector input.
   !--------------------------------
    implicit none
-   real :: c
-   if(c < (-0.5)) c = c + 1.0
-   if(c >= 0.5) c = c - 1.0
-
-   return
-  end subroutine periodic
+   real, dimension(:),intent(inout) :: c
+   integer :: n
+   n=size(c)
+   if(c(1) < (-0.5)) c(1) = c(1) + 1.0
+   if(c(1) >= 0.5) c(1) = c(1) - 1.0
+   if ( n .gt. 1 ) then
+     if(c(2) < (-0.5)) c(2) = c(2) + 1.0
+     if(c(2) >= 0.5) c(2) = c(2) - 1.0
+   endif
+   if (n .gt. 2 ) then
+     if(c(3) < (-0.5)) c(3) = c(3) + 1.0
+     if(c(3) >= 0.5) c(3) = c(3) - 1.0
+   endif
+  end subroutine periodic 
 
 
   subroutine set_random_seed()
@@ -273,6 +313,58 @@ module routines
   end subroutine choose_p
 
 
+  subroutine crist_to_cart(xpp,bt)
+  !----------------------
+  ! general crist_to_cart for 2 and 3 dimensions
+  !---------------------
+   implicit none
+   real, dimension(:),intent(inout) :: xpp
+   real, dimension(:,:),intent(in) :: bt
+   integer :: n
+   n=size(xpp)
+   if (n==2) then
+     call crist_to_cart2D(xpp,bt)
+   elseif(n==3) then
+     call crist_to_cart3D(xpp,bt)
+   endif
+  end subroutine crist_to_cart
+
+
+  subroutine cart_to_crist(xpp,bt)
+  !------------------------
+  ! general cart_to_crist for 2 and 3 dimensional vectors
+  !-----------------------
+   implicit none
+   real, dimension(:), intent(inout) :: xpp
+   real, dimension(:,:),intent(in) :: bt
+   integer :: n
+   n=size(xpp)
+   if (n == 2) then
+     call cart_to_crist2D(xpp,bt)
+   elseif ( n==3) then
+     call cart_to_crist3D(xpp,bt)
+   endif
+  end subroutine cart_to_crist
+
+
+  subroutine get_tf_matrix(r1,r2,A)
+  !--------------------------
+  ! Transformation matrix from r1 to r2. Is outer product (ketbra, projector, ...)
+  ! of A = |r2> <r1| 
+  ! usage:
+  !   A r1 = r2
+  !--------------------------
+  ! using intrinsic fortran functions to achieve the same as get_tf3D
+   implicit none
+   real, dimension(:), intent(in) :: r1, r2
+   real, dimension(:,:), intent(out) :: A
+   integer :: n
+   
+   n = size(r1)
+   A = spread (r2, dim=2, ncopies=n ) * spread( r1, dim=1, ncopies=n )
+  end subroutine get_tf_matrix
+
+
 
 
 !!! ------------------------- !!!
@@ -306,8 +398,10 @@ module routines
  
   subroutine get_tf3D_short(r1,r2,A)
   !--------------------------
-  ! Transformation matrix from r1 to r2
-  ! A r1 = r2
+  ! Transformation matrix from r1 to r2. Is outer product (ketbra, projector, ...)
+  ! of A = |r2> <r1| 
+  ! usage:
+  !   A r1 = r2
   !--------------------------
   ! using intrinsic fortran functions to achieve the same as get_tf3D
    implicit none
@@ -318,39 +412,39 @@ module routines
   end subroutine get_tf3D_short
  
 
-  subroutine read_latvecs3D(fd,latvecs)
-   implicit none
-   integer :: i
-   integer, intent(in) :: fd
-   real, dimension(3,3), intent(out) :: latvecs
-   
-   do i=1,3
-    read(fd,*) latvecs(i,1), latvecs(i,2), latvecs(i,3)
-   end do
-  end subroutine read_latvecs3D
-
-
-  subroutine read_sites3D(fd,site_type, site_coords, Nsites)
-  !---------------------
-  ! read input file of the 3D sites, file structure:
-  ! 
-  ! integer(number of sites)
-  ! integer(site_type) coord_x coord_y coord_z
-  !
-   implicit none
-   integer, intent(in) :: fd  !! file descriptor (unit) number
-   integer :: i
-   integer, intent(out) :: Nsites
-   integer, allocatable, intent(out) :: site_type(:)
-   real, allocatable, intent(out) :: site_coords(:,:)
-
-   read(fd,*) Nsites
-   allocate( site_type( 1:Nsites ) )
-   allocate( site_coords( 1:Nsites, 1:3 ) )
-   do i=1, Nsites
-    read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2), site_coords(i,3)
-   end do
-  end subroutine read_sites3D
+!  subroutine read_latvecs3D(fd,latvecs)
+!   implicit none
+!   integer :: i
+!   integer, intent(in) :: fd
+!   real, dimension(3,3), intent(out) :: latvecs
+!   
+!   do i=1,3
+!    read(fd,*) latvecs(i,1), latvecs(i,2), latvecs(i,3)
+!   end do
+!  end subroutine read_latvecs3D
+! 
+! 
+!  subroutine read_sites3D(fd,site_type, site_coords, Nsites)
+!  !---------------------
+!  ! read input file of the 3D sites, file structure:
+!  ! 
+!  ! integer(number of sites)
+!  ! integer(site_type) coord_x coord_y coord_z
+!  !
+!   implicit none
+!   integer, intent(in) :: fd  !! file descriptor (unit) number
+!   integer :: i
+!   integer, intent(out) :: Nsites
+!   integer, allocatable, intent(out) :: site_type(:)
+!   real, allocatable, intent(out) :: site_coords(:,:)
+! 
+!   read(fd,*) Nsites
+!   allocate( site_type( 1:Nsites ) )
+!   allocate( site_coords( 1:Nsites, 1:3 ) )
+!   do i=1, Nsites
+!    read(fd,*) site_type(i), site_coords(i,1), site_coords(i,2), site_coords(i,3)
+!   end do
+!  end subroutine read_sites3D
 
 
   subroutine read_sites3D_new(fd_sites, nsites,site_hash, coord)
@@ -389,7 +483,7 @@ module routines
   !--------------------------------
   ! distance between two points in 3-dimensions
   ! A, B         ==> vectors of two points
-  ! Lx, Ly, Lz   ==> x,y,z sizes of the box
+  ! Lx, Ly, Lz   ==> x,y,z sizes of the box - ortho-box is assumed
   ! dist         ==> output distance
   !--------------------------------
    implicit none
@@ -489,8 +583,6 @@ module routines
 
 
 
-
-
 !!! -------------------------- !!!
 !                                !
 !    2-dimensional routines      !
@@ -499,6 +591,7 @@ module routines
 
 
   subroutine read_latvecs2D(fd,latvecs)
+  !!!! obsolete
    implicit none
    integer :: i
    integer, intent(in) :: fd
@@ -517,6 +610,7 @@ module routines
   ! integer(number of sites)
   ! integer(site_type) coord_x coord_y
   !
+  !!!! obsolete
    implicit none
    integer, intent(in) :: fd  !! file descriptor (unit) number
    integer :: i, Nsites
