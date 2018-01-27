@@ -1,0 +1,13 @@
+#
+#  KMC input
+#
+#  For begining we declare 
+
+name_simulation "KMC test"
+system_dimension	2
+Nber_node_1dim		128
+node_prop 	2
+input_event "event.lib"
+
+#
+

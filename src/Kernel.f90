@@ -25,7 +25,7 @@
 
   Program Kernel
 !
-  use derived_type
+  use derived_types
   use KMC_routine
   implicit none
 !
@@ -51,11 +51,11 @@
 
 ! -=::: ANALYSE & CONCLUSION :::=-
   call analyse( sys )
-  call print_conclusion( sys )
+  !call print_conclusion( sys )
 
 
 ! -=::: FINILIZATION :::=-
-  call destructor( sys )
+  call sys% destroy
 
   end program Kernel
 
