@@ -107,9 +107,10 @@
       implicit none
       class( KMC_type ) :: this
       integer, intent( in ) :: size_x, dim_
-      integer, optional, intent( in ) :: size_y, size_z, step
+      integer,           optional, intent( in ) :: size_y, size_z, step
       character (len=*), optional, intent( in ) :: algorithm 
-      real, optional, intent( in ) :: temperature, time
+      real,              optional, intent( in ) :: temperature, time
+
       integer :: n !,i,jn
       print*, " Enter in KMC_type constructor..."
 
@@ -123,6 +124,7 @@
       this% algorithm = trim(algorithm)
 
 !  ::: Temperature
+!      print*, 'Temperature..'
       if ( present(temperature) ) then
          this% temp = temperature
       else
@@ -132,26 +134,32 @@
       this% f0 = 1.0 ;! 1e-12
 
 !  ::: max step & time
+!      print*, 'Step  and Time...'
       this% max_step = 1
       this% max_time = 1.0
       if ( present(step) ) this% max_step = step
       if ( present(time) ) this% max_time = time
 
 !  ::: System Size
+!      print*, 'System Size...'
       if ( dim_ > 3 .or. dim_ == 0 ) &
          call print_error( " BAD SYSTEM DIMENSION " )
       this% sys_dim = dim_
       this% nsites(:) = 1
       this% nsites(1) = size_x
+
       if ( present(size_y) ) this% nsites(2) = size_y
-      if ( .not.present(size_y).and.dim_ == 2) this% nsites(2) = size_y
+      if ( .not.present(size_y).and.dim_ == 2) this% nsites(2) = size_x
       if ( present(size_z) ) this% nsites(3) = size_z
+
       if ( dim_ == 3.and.(.not.present(size_y)).and.(.not.present(size_z)) )  &
         call print_error( "System 3D => Ly and Lz must be declared " )
+
       this% tot_sites = this% nsites(1)*this% nsites(2)*this% nsites(3)
       n = this% tot_sites
 
 !  ::: Table allocation 
+!      print*, 'Table allocation...'
       allocate( this% site(n), this% rate(n), this% nneig(n), this% neig(10,n), this% event_rate(10,n) )
       if ( .not.allocated(this% site)  .or. .not.allocated(this% rate) .or.   &
            .not.allocated(this% nneig) .or. .not.allocated(this% neig) .or.   &
@@ -159,6 +167,7 @@
          call print_error( " KMC_type => CONSTRUCTOR problem..." )
 !
 !  ::: Properties table
+!      print*, 'Prop Table allocation...'
       if ( this% nprop /= 0 ) allocate( this% prop( this% nprop ) )
 !
       print*, " KMC_type Constructor DONE"
