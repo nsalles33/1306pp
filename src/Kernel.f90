@@ -22,32 +22,54 @@
 !  - I try to design the program in object oriented... may be is not convinient... I try
 !  
 ! =================================================================================================
-
+!
   Program Kernel
 !
   use derived_types
   use KMC_routine
+  use errors
   implicit none
 !
-  integer          :: nstep, ievent
+  integer          :: nstep, u0, ios
+  real             :: t_start, t_stop
+
   type( KMC_type ) :: sys 
 !
+! -=::: Input_file Recuperation ::=-
+  if ( argc() >= 1 ) then
+     call getarg( 1, sys% input_file )
+  else
+     call print_error( " Execution : ./EXE.x < input_file " ); 
+  endif    
+  write (*,*) "Input_file", sys% input_file
 
 ! -=::: SYSTEM INITIALIZATION :::=-
   call Init_system( sys )
 
+ ! u0 = 161
+  open( newunit=u0, file="state_file.xyz",status="replace", iostat=ios )
+    if (ios /= 0) call warning( " CAN'T OPEN => state_file.xyz " )
+
+!  call cpu_time( t_start )
+  call system_clock( t_start )
+
 ! -=::: SYSTEM EVOLUTION :::=-
   nstep = 0
-  do while ( nstep <= sys% max_step )
+  call print_state( sys, nstep, u0 )
+  do while ( nstep < sys% max_step )
+
      nstep = nstep + 1
-     call print_state( sys )
-     call rate_sum_calc( sys )
-     ievent = choose_event( sys )
-     call Event_Applied( sys, ievent )
-     call Time_increment( sys )
+     call algorithm( sys )
+     call print_state( sys, nstep, u0 )
+
   enddo
 !
-  call print_state( sys )
+!  call cpu_time( t_stop )
+  call system_clock( t_stop )
+!
+  write (*,'(a,1x,f15.6,1x,a)') " TIME elapse :", t_stop - t_start, " second "
+!
+  close( u0 )
 
 ! -=::: ANALYSE & CONCLUSION :::=-
   call analyse( sys )
@@ -59,7 +81,7 @@
 
   end program Kernel
 
-
+! =================================================================================================
 
 
 

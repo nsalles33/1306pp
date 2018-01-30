@@ -5,14 +5,16 @@ EXE=../EXE.x
 
 F90=gfortran-mp-7
 
-FFLAGS= -Wall -O
+FFLAGS= -Wall -g -O -fdefault-real-8
 
 all: $(EXE)
 
 VPATH=../
 S90 = tools.f90 \
       KMC_routines.f90 \
-      Init_system.f90 \
+      System_init.f90 \
+      System_rate.f90 \
+      Algorithms.f90 \
       Kernel.f90
 
 O90=$(S90:.f90=.o)
