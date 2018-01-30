@@ -5,7 +5,7 @@ EXE=../EXE.x
 
 F90=gfortran-mp-7
 
-FFLAGS= -Wall -g -O -fdefault-real-8
+FFLAGS= -Wall -g -O -fdefault-real-8 -fbounds-check
 
 all: $(EXE)
 
@@ -14,6 +14,7 @@ S90 = tools.f90 \
       KMC_routines.f90 \
       System_init.f90 \
       System_rate.f90 \
+      neig_list.f90 \
       Algorithms.f90 \
       Kernel.f90
 

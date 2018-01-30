@@ -1,9 +1,12 @@
-
+!
+!    Routine to calculate the rate of each event and each site  
+!
+!
     subroutine rate_sum_calc( struc )
       use derived_types
       implicit none
       type( KMC_type ), intent( inout ) :: struc
-      integer :: i, jn, j, k, kn, dbd
+      integer :: i, jn, j, k, kn, dbd, l
       real :: kt, ebd, f0, sum_rate
       logical :: see
 
@@ -12,7 +15,7 @@
 !      print*, " Dans rate_sum_calc..."
 
       see = .true.
-      kt = 1.0 ! struc% kt
+      kt = struc% kt
       ebd = struc% event% de( 1 )
       f0 = struc% f0
 !
@@ -34,6 +37,7 @@
          ddb( i ) = 0 ; v( i ) = 0 ; bd( i ) = 0
          do jn = 1,struc% nneig( i )
             j = struc% neig( jn, i )
+            if (j == 0) write (*,*) "PB system_rate: ",i,jn,j
             struc% event_rate( jn, i ) = 0.0
             if ( struc% site( j ) == 1 ) ddb( i ) = ddb( i ) + 1
             if ( struc% site( j ) == 0 ) v( i ) = v( i ) + 1
@@ -53,6 +57,8 @@
             ddb( j ) = 0 ; bd( j ) = 0 ; v( i ) = 0
             do kn = 1,struc% nneig(j)
                k = struc% neig( kn, j )
+               if (k <= 0.or.k>struc%tot_sites)  &
+                 write (*,*) k,"PB system_rate",i,jn,j,(l,struc% neig(l,j),l=1,struc% nneig(j))
                if ( struc% site( k ) == 0 ) ddb( j ) = ddb( j ) + 1
                if ( struc% site( k ) == 1 ) bd( j ) = bd( j ) + 1
             enddo
@@ -63,7 +69,7 @@
             
 !            write (*,*) j, struc% nneig( j ), bd( j ), ddb( j ), v( j )
 !            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
-!            write (*,*) i, jn, j, dbd,f0, -dbd*ebd/kt, struc% event_rate( jn, i )
+!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, struc% event_rate( jn, i )
 
          enddo
 !         write (*,*) " *** ", i, f0, ebd, struc% rate( i )

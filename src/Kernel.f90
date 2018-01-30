@@ -36,22 +36,23 @@
   type( KMC_type ) :: sys 
 !
 ! -=::: Input_file Recuperation ::=-
-  if ( argc() >= 1 ) then
-     call getarg( 1, sys% input_file )
-  else
-     call print_error( " Execution : ./EXE.x < input_file " ); 
-  endif    
-  write (*,*) "Input_file", sys% input_file
+!  if ( iargc() >= 1 ) then
+!     call getarg( 1, sys% input_file )
+!  else
+!     call print_error( " Execution : ./EXE.x input_file " ); 
+!  endif    
+!  write (*,*) "Input_file : ", sys% input_file
 
 ! -=::: SYSTEM INITIALIZATION :::=-
   call Init_system( sys )
+  call sys% init_table
 
  ! u0 = 161
   open( newunit=u0, file="state_file.xyz",status="replace", iostat=ios )
     if (ios /= 0) call warning( " CAN'T OPEN => state_file.xyz " )
 
-!  call cpu_time( t_start )
-  call system_clock( t_start )
+  call cpu_time( t_start )
+!  call system_clock( t_start )
 
 ! -=::: SYSTEM EVOLUTION :::=-
   nstep = 0
@@ -64,8 +65,8 @@
 
   enddo
 !
-!  call cpu_time( t_stop )
-  call system_clock( t_stop )
+  call cpu_time( t_stop )
+!  call system_clock( t_stop )
 !
   write (*,'(a,1x,f15.6,1x,a)') " TIME elapse :", t_stop - t_start, " second "
 !

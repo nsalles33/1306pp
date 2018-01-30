@@ -53,8 +53,8 @@
     type, public :: event_type  ! This type will can be modulate by the user!!
       integer                              :: nevent
       integer, dimension(:), allocatable   :: init_state,   &
-                                              final_state,  &
-                                              ebarrier,     &
+                                              final_state
+      real, dimension(:), allocatable      :: ebarrier,     &
                                               de
      contains
       procedure :: builder => constructor_event_type 
@@ -64,15 +64,21 @@
 !
 ! '''''''''''''''''''''''''''' NEW TYPE '''''''''''''''''''''''''''''''''''''''
     type, public :: KMC_type
-      logical                              :: bavard
+      logical                              :: bavard,      &
+                                              period_x,    &
+                                              period_y,    &
+                                              period_z
       character (len=25)                   :: algorithm,   &
                                               input_file
       integer                              :: tot_sites,   &
                                               max_step,    &
                                               sys_dim,     &
-                                              freq_write
+                                              freq_write,  &
+                                              nprop
       real                                 :: sum_rate,    &
+                                              rand_rate,   &
                                               time,        &
+                                              rand_time,   &
                                               max_time,    &
                                               temp, kt, f0
       integer, dimension(3)                :: nsites
@@ -80,13 +86,15 @@
                                               env_site,    &
                                               nneig
       integer, dimension(:,:), allocatable :: neig
-      real, dimension(:), allocatable      :: rate        
+      real, dimension(:), allocatable      :: rate,        &
+                                              prop        
       real, dimension(:,:), allocatable    :: event_rate
       type( event_type )                   :: event
      contains
       procedure                            :: builder    => constructor_kmc_type
       procedure                            :: destroy    => destructor_kmc_type
       procedure                            :: print_type => print_kmc_type
+      procedure                            :: init_table => init_table
     end type KMC_type
 ! '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -95,15 +103,19 @@
 ! ............................................................................
 ! ............................ KMC_T BUILDER .................................
 ! ............................................................................
-    subroutine constructor_kmc_type( this, dim_, size1_, size2_, size3_, step, time, algorithm, temperature )
+    subroutine constructor_kmc_type( this, dim_, size_x, size_y, size_z, step, time, algorithm, temperature )
       implicit none
       class( KMC_type ) :: this
-      integer, intent( in ) :: size1_, dim_
-      integer, optional, intent( in ) :: size2_, size3_, step
+      integer, intent( in ) :: size_x, dim_
+      integer, optional, intent( in ) :: size_y, size_z, step
       character (len=*), optional, intent( in ) :: algorithm 
       real, optional, intent( in ) :: temperature, time
-      integer :: n,i,jn
+      integer :: n !,i,jn
       print*, " Enter in KMC_type constructor..."
+
+      !this% period_x = .false.
+      !this% period_y = .false.
+      !this% period_z = .false.
 
       this% time = 0
       this% sum_rate = 0
@@ -116,8 +128,8 @@
       else
          this% temp = 300.0
       endif
-      this% kt = kb*this% temp
-      this% f0 = 1e-12
+      this% kt = 1.0 ;! kb*this% temp
+      this% f0 = 1.0 ;! 1e-12
 
 !  ::: max step & time
       this% max_step = 1
@@ -130,11 +142,11 @@
          call print_error( " BAD SYSTEM DIMENSION " )
       this% sys_dim = dim_
       this% nsites(:) = 1
-      this% nsites(1) = size1_
-      if ( present(size2_) ) this% nsites(2) = size2_
-      if ( .not.present(size2_).and.dim_ == 2) this% nsites(2) = size1_
-      if ( present(size3_) ) this% nsites(3) = size3_
-      if ( dim_ == 3.and.(.not.present(size2_)).and.(.not.present(size3_)) )  &
+      this% nsites(1) = size_x
+      if ( present(size_y) ) this% nsites(2) = size_y
+      if ( .not.present(size_y).and.dim_ == 2) this% nsites(2) = size_y
+      if ( present(size_z) ) this% nsites(3) = size_z
+      if ( dim_ == 3.and.(.not.present(size_y)).and.(.not.present(size_z)) )  &
         call print_error( "System 3D => Ly and Lz must be declared " )
       this% tot_sites = this% nsites(1)*this% nsites(2)*this% nsites(3)
       n = this% tot_sites
@@ -146,13 +158,9 @@
            .not.allocated(this% event_rate) )                                 &
          call print_error( " KMC_type => CONSTRUCTOR problem..." )
 !
-      do i = 1,this% tot_sites
-         this% rate( i ) = 0.0
-         do jn = 1,this% nneig( i )
-            this% event_rate( jn, i ) = 0.0
-         enddo
-      enddo
-
+!  ::: Properties table
+      if ( this% nprop /= 0 ) allocate( this% prop( this% nprop ) )
+!
       print*, " KMC_type Constructor DONE"
 
     end subroutine constructor_kmc_type
@@ -168,6 +176,24 @@
            allocated(this% nneig).or.allocated(this% neig) )   &
          print*, " KMC_type => DESTRUCTOR problem ..."
     end subroutine destructor_kmc_type
+! ............................................................................
+!
+    subroutine Init_table( this )
+      implicit none
+      class( KMC_type ) :: this
+      integer :: i, jn
+!  ::: Rate Initialization at 0.
+      do i = 1,this% tot_sites
+         this% rate( i ) = 0.0
+         do jn = 1,this% nneig( i )
+            this% event_rate( jn, i ) = 0.0
+         enddo
+      enddo
+!  ::: Properties Table initialization 
+      do i = 1, this% nprop
+         this% prop( i ) = 0.0
+      enddo
+    end subroutine Init_table
 ! ............................................................................
 !
     subroutine constructor_event_type( this, n )
@@ -213,6 +239,7 @@
       enddo
       write (*,*) " System Size (nodes) : ", this% tot_sites
       write (*,*) " Freq Write          : ", this% freq_write
+      write (*,*) " Bound Condition     : ", this% period_x, this% period_y, this% period_z
       write (*,*) " ================================== "
 
     end subroutine print_kmc_type
@@ -222,14 +249,16 @@
       implicit none
       type( KMC_type ) :: this
       integer, intent ( in ) :: step, u0
-      integer :: ios, i, x, y, z, nx, nxy
+      integer :: ios, i, x, y, z, nx, ny, nxy
       
       if ( MODULO( step, this% freq_write ) /= 0 ) return 
 
       nx = this% nsites(1) 
-      nxy = nx*this% nsites(2) 
+      ny = this% nsites(2)
+      nxy = nx*ny 
 
 !  ::: Write Configuration
+!    -- 3D cubic
       write (u0,fmt='(1x,I6)',iostat=ios) this% tot_sites
         if (ios /=0) write (*,*) " Problem write => state_file.xyz  "
 
@@ -238,15 +267,17 @@
 
       do i = 0,this%tot_sites - 1
          x = MODULO( i, nx ) 
-         y = i / nx
+         y = MODULO( i/nx, ny )
          z = i / nxy
          write (u0,'(1x,I2,3(2x,I4))') this% site(i+1), x, y, z 
       enddo
 
 !  ::: Write Energetic Statistic
-      if ( step == 0 )  &
+      if ( step == 0 )  then
         write (*,*) "   Time   |   Pore Size (site)  |  rand_rate    |    rand_time    "
-      write (*,*) 
+        write (*,*) " ----------------------------------------------------------------- "
+      endif
+      write (*,'(4(2x,E10.4))') this% time, this% prop(1), this% rand_rate, this% rand_time 
 
     end subroutine print_state
 
@@ -264,16 +295,18 @@
     subroutine choose_event( struc, isite, ievent )
       use random
       implicit none
-      type( KMC_type ), intent( in ) :: struc
+      type( KMC_type ), intent( inout ) :: struc
       integer, intent( inout ) :: isite, ievent
 
       integer :: i, jn
       real :: rsum, rdn, rrdn
 
 !      print*, " - To do :: choose_event "
+      isite = 0 ; ievent = 0
       call random_number( rdn )
       rrdn = rdn*struc% sum_rate
-      
+      struc% rand_rate = rrdn
+!      
       rsum = 0.0
       do i = 1,struc% tot_sites
       !
@@ -289,6 +322,7 @@
          isite = i
          if ( rsum > rrdn ) exit
       enddo
+      if ( rsum <= rrdn ) write (*,*) " PB choose event...", rsum,struc% sum_rate
 !      write (*,*) struc% sum_rate,rdn,rrdn,rsum
 !      write (*,'(2(a,1x,i6))') " We Choose on site ", isite," event ",ievent
 !      write (*,*) struc% site( isite ), struc% site( struc% neig( ievent,isite ) )
@@ -318,13 +352,13 @@
     subroutine time_increment( struc )
       implicit none
       type( KMC_type ), intent( inout ) :: struc
-      real                              :: rdn, dt
+      real                              :: rdn
 
 !      print*, " - To do :: Time_increment "
 
       call random_number( rdn )
-      dt = - log( rdn )/struc% sum_rate
-      struc% time = struc% time + dt
+      struc% rand_time = - log( rdn )/struc% sum_rate
+      struc% time = struc% time + struc% rand_time
 
     end subroutine
 ! .......................................................
