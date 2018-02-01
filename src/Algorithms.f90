@@ -32,6 +32,21 @@
     call Time_increment( struc )
 
   end subroutine algo_bkl
+! .................................................................................................
+
+    subroutine time_increment( struc )
+      use derived_types
+      implicit none
+      type( KMC_type ), intent( inout ) :: struc
+      real                              :: rdn
+
+!      print*, " - To do :: Time_increment "
+
+      call random_number( rdn )
+      struc% rand_time = - log( rdn )/struc% sum_rate
+      struc% time = struc% time + struc% rand_time
+
+    end subroutine
 ! =================================================================================================
 
   subroutine algo_gillepsie( struc )

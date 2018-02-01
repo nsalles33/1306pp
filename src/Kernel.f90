@@ -36,12 +36,12 @@
   type( KMC_type ) :: sys 
 !
 ! -=::: Input_file Recuperation ::=-
-!  if ( iargc() >= 1 ) then
-!     call getarg( 1, sys% input_file )
-!  else
-!     call print_error( " Execution : ./EXE.x input_file " ); 
-!  endif    
-!  write (*,*) "Input_file : ", sys% input_file
+  if ( iargc() >= 1 ) then
+     call getarg( 1, sys% input_file )
+  else
+     call print_error( " Execution : ./EXE.x input_file " ); 
+  endif    
+  write (*,*) "Input_file : ", sys% input_file
 
 ! -=::: SYSTEM INITIALIZATION :::=-
   call Init_system( sys )
@@ -61,6 +61,7 @@
 
      nstep = nstep + 1
      call algorithm( sys )
+     call analyse( sys )
      call print_state( sys, nstep, u0 )
 
   enddo
@@ -73,7 +74,6 @@
   close( u0 )
 
 ! -=::: ANALYSE & CONCLUSION :::=-
-  call analyse( sys )
   !call print_conclusion( sys )
 
 

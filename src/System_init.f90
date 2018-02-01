@@ -11,10 +11,34 @@
       implicit none
 
       type( KMC_type ), intent( inout ) :: struc
-      integer                           :: i,id, ny,nz
-      integer                           :: nsites, sys_dim, u0, ios, node_state, nevent, nstep
+
+!  ::: Read input_file
+      call read_input( struc )
+
+      call struc% printer
+
+      call read_event( struc )
+      call struc% event% printer
+
+!  ::: Initialization of node State
+!      This step depend on system...
+      call distribution_state ( struc, 0.0 ) ! This routine is specific for vacancies diffusion
+
+      call neig_list( struc )
+
+    end subroutine Init_system
+! =================================================================================================
+
+    subroutine read_input( struc )
+      use derived_types
+      use errors
+      implicit none
+
+      type( KMC_type ), intent( inout ) :: struc
+      integer                           :: ny,nz
+      integer                           :: nsites, sys_dim, u0, ios, node_state, nstep
       real                              :: temp
-      character (len=50)                :: input_file, string, input_event, algo_txt
+      character (len=50)                :: string, input_event, algo_txt
       character (len=1)                 :: px,py,pz
       logical                           :: EOF
 
@@ -22,17 +46,12 @@
       CHARACTER (len=100), dimension (50) :: args
       integer :: nargs
 
-!   ...We must read input file
-      print*, " - To do :: Init_system "
-      print*, " - To do :: Read_input "
-
       sys_dim = 2
       nsites = 10
       struc% nprop = 0
 
-!  ::: Read input_file
-      input_file = "input_KMC.dat"
-      open( newunit=u0, file=trim(input_file), iostat=ios )
+      !input_file = "input_KMC.dat"
+      open( newunit=u0, file=trim(struc% input_file), iostat=ios )
       if ( ios /= 0 ) call print_error( "input_file does't open!!" )
       !write (*,*) trim(input_file)," open...",u0,ios
 
@@ -48,7 +67,7 @@
          if ( args(1) == "nsite_z" )          read ( args(2), '(i5)' ) nz
 
          if ( args(1) == "node_prop" )        read ( args(2), '(i5)' ) node_state
-         if ( args(1) == "input_event" )      read ( args(2), '(a)'  ) input_event
+         if ( args(1) == "input_event" )      read ( args(2), '(a)'  ) struc% input_event
          if ( args(1) == "algorithm" )        read ( args(2), '(a)'  ) algo_txt
          if ( args(1) == "temperature" )      read ( args(2), '(f6.6)' ) temp
          if ( args(1) == "nstep" )            read ( args(2), '(I6)' ) nstep
@@ -71,59 +90,29 @@
       if ( sys_dim == 3 )   &
         call struc%builder( sys_dim, nsites, size_y=ny, size_z=nz, algorithm=algo_txt, temperature=temp, step=nstep )
 
-      call struc%print_type
-
-!  ::: Lecture of state and rate of each node
-      open( newunit=u0, file=trim(input_event), iostat=ios )
-      if ( ios /= 0 ) call print_error( "input_event does't open!!" )
-
-      EOF = .false.
-      do while ( .not.EOF )
-         call read_line( u0, string, EOF )
-         call parse( trim(string), delims, args, nargs )
-         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
-         if ( args(1) == "Number_of_event" ) then
-            read( args(2), '(i5)' ) nevent
-            call struc% event% builder( nevent )
-            exit
-         endif
-      enddo
-      do i = 1,struc% event% nevent
-         read (u0,*) id, struc% event% init_state(id), struc% event% final_state(id),   &
-                         struc% event% ebarrier(id), struc% event% de(id)
-         write (*,*) id, struc% event% init_state(id), struc% event% final_state(id),   &
-                         struc% event% ebarrier(id), struc% event% de(id)
-      enddo
-
-!  ::: Initialization of node State
-!      This step depend on system...
-      call distribution_state ( struc, 0.05 ) ! This routine is specific for vacancies diffusion
-
-      call neig_list( struc )
-
-    end subroutine Init_system
+    end subroutine read_input
 ! =================================================================================================
 
-    subroutine distribution_state ( struc, per100 )
-      use derived_types
-      use random
-      implicit none 
-      type( KMC_type ), intent( inout ) :: struc
-      integer                           :: i
-      real, intent( in )                :: per100
-      real                              :: rnd
+!   subroutine distribution_state ( struc, per100 )
+!     use derived_types
+!     use random
+!     implicit none 
+!     type( KMC_type ), intent( inout ) :: struc
+!     integer                           :: i
+!     real, intent( in )                :: per100
+!     real                              :: rnd
 
-      call set_random_seed()
+!     call set_random_seed()
 
-      do i = 1,struc% tot_sites
-         call random_number( rnd ) 
-         if ( rnd <= 1 - per100 ) then
-            struc% site( i ) = 1
-         else
-            struc% site( i ) = 0
-         endif
-      enddo
+!     do i = 1,struc% tot_sites
+!        call random_number( rnd ) 
+!        if ( rnd <= 1 - per100 ) then
+!           struc% site( i ) = 1
+!        else
+!           struc% site( i ) = 0
+!        endif
+!     enddo
 
-    end subroutine distribution_state
+!   end subroutine distribution_state
 ! =================================================================================================
 

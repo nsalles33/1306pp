@@ -40,12 +40,12 @@
       implicit none
 !
       CHARACTER (len=*), intent (in) :: instring
-      character (len=1) :: delims,delim2
-      character (len=100) :: strgtmp
+      character (len=1)              :: delims,delim2
+      character (len=100)            :: strgtmp
       CHARACTER (len=100), dimension (50), INTENT(INOUT) :: args
-      integer, intent (out) :: nargs
-      integer :: indexs,leng,nmax,test
-      character :: tab
+      integer, intent (out)                              :: nargs
+      integer                                            :: indexs,leng,nmax,test
+      character                                          :: tab
 
      ! allocate(args(nargs))
       args(:) = " "

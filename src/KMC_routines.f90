@@ -59,6 +59,7 @@
      contains
       procedure :: builder => constructor_event_type 
       procedure :: destroy => destructor_event_type
+      procedure :: printer => print_event
     end type event_type
 ! '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 !
@@ -69,7 +70,8 @@
                                               period_y,    &
                                               period_z
       character (len=25)                   :: algorithm,   &
-                                              input_file
+                                              input_file,  &
+                                              input_event
       integer                              :: tot_sites,   &
                                               max_step,    &
                                               sys_dim,     &
@@ -81,11 +83,14 @@
                                               rand_time,   &
                                               max_time,    &
                                               temp, kt, f0
-      integer, dimension(3)                :: nsites
-      integer, dimension(:), allocatable   :: site,        &
-                                              env_site,    &
-                                              nneig
-      integer, dimension(:,:), allocatable :: neig
+    !  character (len=25), dimension(:), allocatable :: txtprop
+      integer, dimension(3)                         :: nsites
+      integer, dimension(:), allocatable            :: site,        &
+                                                       env_site,    &
+                                                       nneig,       &
+                                                       nevt
+      integer, dimension(:,:), allocatable          :: neig,        &
+                                                       event_site
       real, dimension(:), allocatable      :: rate,        &
                                               prop        
       real, dimension(:,:), allocatable    :: event_rate
@@ -93,7 +98,7 @@
      contains
       procedure                            :: builder    => constructor_kmc_type
       procedure                            :: destroy    => destructor_kmc_type
-      procedure                            :: print_type => print_kmc_type
+      procedure                            :: printer    => print_kmc_type
       procedure                            :: init_table => init_table
     end type KMC_type
 ! '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -160,15 +165,17 @@
 
 !  ::: Table allocation 
 !      print*, 'Table allocation...'
-      allocate( this% site(n), this% rate(n), this% nneig(n), this% neig(10,n), this% event_rate(10,n) )
+      allocate( this% site(n), this% rate(n), this% nneig(n), this% neig(10,n), this% event_rate(10,n),  &
+                this% nevt(n), this% event_site(10,n) )
       if ( .not.allocated(this% site)  .or. .not.allocated(this% rate) .or.   &
            .not.allocated(this% nneig) .or. .not.allocated(this% neig) .or.   &
-           .not.allocated(this% event_rate) )                                 &
+           .not.allocated(this% event_rate).or. .not.allocated(this% nevt) .or.&
+           .not.allocated(this% event_site) )                                 &
          call print_error( " KMC_type => CONSTRUCTOR problem..." )
 !
 !  ::: Properties table
 !      print*, 'Prop Table allocation...'
-      if ( this% nprop /= 0 ) allocate( this% prop( this% nprop ) )
+      if ( this% nprop /= 0 ) allocate( this% prop( this% nprop ) ) !, this% txtprop(this% nprop) )
 !
       print*, " KMC_type Constructor DONE"
 
@@ -180,10 +187,16 @@
       class( KMC_type ) :: this
 !  :: destroy event_type
       call this% event% destroy  
-      deallocate( this% site, this% rate, this% nneig, this% neig )
-      if ( allocated(this% site).or.allocated(this% rate).or.  &
-           allocated(this% nneig).or.allocated(this% neig) )   &
+
+      deallocate( this% site, this% rate, this% nneig, this% neig, this% event_rate,   &
+                  this% nevt, this% event_site )
+
+      if ( allocated(this% site).or.allocated(this% rate).or.       &
+           allocated(this% nneig).or.allocated(this% neig).or.      &
+           allocated(this% event_rate).or.allocated(this% nevt).or. &
+           allocated(this% event_site) )   &
          print*, " KMC_type => DESTRUCTOR problem ..."
+
     end subroutine destructor_kmc_type
 ! ............................................................................
 !
@@ -237,7 +250,7 @@
       class( KMC_type ) :: this
       integer           :: i
 
-      print*, " - To do :: print_kmc_type "
+!      print*, " - To do :: print_kmc_type "
       write (*,*) " ======== SYSTEM PARAMETERS ======= "
       write (*,*) " Algorithm         : ", trim(this% algorithm)
       write (*,*) " MAX KMC steps     : ", this% max_step
@@ -252,6 +265,25 @@
       write (*,*) " ================================== "
 
     end subroutine print_kmc_type
+! ............................................................................
+    subroutine print_event( this ) 
+      implicit none
+      class( event_type ) :: this
+      integer :: i, id, nevt2
+
+      nevt2 = this% nevent/2
+
+      write (*,*) " =========== EVENT LIB ========= "
+      do i = 1,nevt2
+         id = i
+         write (*,*) " Evt:",id,this% init_state( id ), this% final_state( id ), &
+                                this% ebarrier( id ), this% de( id )
+         id = i + nevt2
+         write (*,*) " Inv:",id,this% init_state( id ), this% final_state( id ), &
+                                this% ebarrier( id ), this% de( id )
+      enddo
+
+    end subroutine print_event
 ! ............................................................................
 !
     subroutine print_state( this, step, u0 )
@@ -283,10 +315,11 @@
 
 !  ::: Write Energetic Statistic
       if ( step == 0 )  then
-        write (*,*) "   Time   |   Pore Size (site)  |  rand_rate    |    rand_time    "
+        write (*,*) "   Time   |  rand_rate    |    rand_time    " !,( " | ",trim(this% txtprop(i)),i=1,this%nprop )
         write (*,*) " ----------------------------------------------------------------- "
       endif
-      write (*,'(4(2x,E10.4))') this% time, this% prop(1), this% rand_rate, this% rand_time 
+      write (*,'(4(2x,E10.4))') this% time, this% rand_rate, this% rand_time, this% prop(1) 
+      write (100,'(4(2x,E10.4))') this% time, this% rand_rate, this% rand_time, this% prop(1) 
 
     end subroutine print_state
 
@@ -301,81 +334,11 @@
   contains
 
 ! .......................................................
-    subroutine choose_event( struc, isite, ievent )
-      use random
-      implicit none
-      type( KMC_type ), intent( inout ) :: struc
-      integer, intent( inout ) :: isite, ievent
-
-      integer :: i, jn
-      real :: rsum, rdn, rrdn
-
-!      print*, " - To do :: choose_event "
-      isite = 0 ; ievent = 0
-      call random_number( rdn )
-      rrdn = rdn*struc% sum_rate
-      struc% rand_rate = rrdn
-!      
-      rsum = 0.0
-      do i = 1,struc% tot_sites
-      !
-         do jn = 1,struc% nneig( i )
-      !  !
-            ievent = jn
-            rsum = rsum + struc% event_rate( jn, i )
-!            write (*,*) "rsum:",i ,jn ,rsum, struc% event_rate( jn, i )
-            if ( rsum > rrdn ) exit
-      !  !
-         enddo 
-      !
-         isite = i
-         if ( rsum > rrdn ) exit
-      enddo
-      if ( rsum <= rrdn ) write (*,*) " PB choose event...", rsum,struc% sum_rate
-!      write (*,*) struc% sum_rate,rdn,rrdn,rsum
-!      write (*,'(2(a,1x,i6))') " We Choose on site ", isite," event ",ievent
-!      write (*,*) struc% site( isite ), struc% site( struc% neig( ievent,isite ) )
-
-    end subroutine choose_event
-! .......................................................
-    subroutine event_applied( struc, is, jn )
-      implicit none
-      type( KMC_type ) :: struc
-      integer, intent( in ) :: is, jn
-      integer :: j
-!      print*, " - To do :: Event_applied "
-      
-!  ::: Flip 0 -> 1
-      if ( struc% site( is ) == 1 ) then
-         call warning( " site Flip Problem 0 = 1 ")
-         write (*,*) is,struc% site( is ), (struc% neig(j,is),struc% site( struc%neig(j,is) ),j=1,struc% nneig(is))
-         write (*,*) is,struc% rate( is ), (struc% neig(j,is),struc% event_rate( j,is ),j=1,struc% nneig(is))
-      endif
-      struc% site( is ) = 1
-      j = struc% neig( jn, is )
-      if ( struc% site( j ) == 0 ) call warning( " site Flip Problem 1 = 0 ")
-      struc% site( j ) = 0
-
-    end subroutine event_applied
-! .......................................................
-    subroutine time_increment( struc )
-      implicit none
-      type( KMC_type ), intent( inout ) :: struc
-      real                              :: rdn
-
-!      print*, " - To do :: Time_increment "
-
-      call random_number( rdn )
-      struc% rand_time = - log( rdn )/struc% sum_rate
-      struc% time = struc% time + struc% rand_time
-
-    end subroutine
-! .......................................................
-    subroutine analyse( struc )
-      implicit none
-      type( KMC_type ) :: struc
-!      print*, " - To do :: analyse "
-    end subroutine analyse
+!    subroutine analyse( struc )
+!      implicit none
+!      type( KMC_type ) :: struc
+!!      print*, " - To do :: analyse "
+!    end subroutine analyse
 ! .......................................................
     subroutine print_conclusion( struc )
       implicit none
