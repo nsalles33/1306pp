@@ -12,7 +12,7 @@
 !
 ! .................................................................................................
 
-    subroutine read_event( struc ) bind( C )
+    subroutine read_event( struc )
       use iso_c_binding
       use derived_types
       use errors
@@ -30,7 +30,7 @@
       integer( c_int ), dimension(:), pointer :: init_state, final_state
       real( c_double ), dimension(:), pointer :: ebarrier, de
 
-!  ::: Lecture of state and rate of each node
+      !  ::: Lecture of state and rate of each node
       open( newunit=u0, file=trim(struc% input_event), iostat=ios )
       if ( ios /= 0 ) call error( "input_event does't open!!" )
 
@@ -63,7 +63,7 @@
     end subroutine read_event
 ! .................................................................................................
 
-    subroutine event_rate_calc( struc ) bind( C )
+    subroutine event_rate_calc( struc )
       use iso_c_binding
       use derived_types
       use errors
@@ -153,7 +153,7 @@
     end subroutine event_rate_calc
 ! ..................................................................................................
 
-    subroutine choose_event( struc, isite, ievent ) bind( C )
+    subroutine choose_event( struc, isite, ievent )
       use iso_c_binding
       use derived_types
       use random
@@ -198,7 +198,7 @@
     end subroutine choose_event
 ! ..................................................................................................
     
-    subroutine event_applied( struc, is, jn ) bind( C )
+    subroutine event_applied( struc, is, jn )
       use iso_c_binding
       use derived_types
       implicit none
@@ -231,7 +231,7 @@
     end subroutine event_applied    
 ! ..................................................................................................
 
-    subroutine analyse( struc ) bind( C )
+    subroutine analyse( struc )
       use iso_c_binding
       use derived_types
       implicit none

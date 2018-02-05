@@ -9,6 +9,9 @@ system_dimension	3
 nsite_x			128
 nsite_y			128
 nsite_z			1  
+init_config		0.00
+
+shared_library	"shared_lib/lib_ex02.so"
 
 node_prop 	2
 input_event "event.lib"

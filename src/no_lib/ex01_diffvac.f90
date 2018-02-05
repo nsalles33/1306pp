@@ -12,7 +12,7 @@
 !
 ! .................................................................................................
 
-    subroutine read_event( struc ) bind( C )
+    subroutine read_event( struc ) 
       use iso_c_binding
       use derived_types
       use errors
@@ -63,7 +63,7 @@
     end subroutine read_event
 ! .................................................................................................
 
-    subroutine event_rate_calc( struc ) bind( C )
+    subroutine event_rate_calc( struc ) 
       use iso_c_binding
       use derived_types
       use errors
@@ -153,7 +153,7 @@
     end subroutine event_rate_calc
 ! ..................................................................................................
 
-    subroutine choose_event( struc, isite, ievent ) bind( C )
+    subroutine choose_event( struc, isite, ievent ) 
       use iso_c_binding
       use derived_types
       use random
@@ -231,7 +231,7 @@
     end subroutine event_applied    
 ! ..................................................................................................
 
-    subroutine analyse( struc ) bind( C )
+    subroutine analyse( struc ) 
       use iso_c_binding
       use derived_types
       implicit none

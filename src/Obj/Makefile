@@ -5,14 +5,16 @@ EXE=../EXE.x
 
 F90=gfortran-mp-7
 
-FFLAGS= -Wall -g -O -cpp -fdefault-real-8 -fbounds-check 
+FFLAGS= -Wall -O -fdefault-real-8 $(FDEBUG) $(LSHARED)
+FDEBUG= -g -fbounds-check
+LSHARED= -cpp -ldl -DSHARED_LIB
 
 all: $(EXE)
 
 VPATH=../
 S90 = tools.f90 \
       KMC_routines.f90 \
-      ex02_adsrbdesrb.f90 \
+      lib_dlopen.f90 \
       System_init.f90 \
       System_rate.f90 \
       neig_list.f90 \

@@ -31,6 +31,7 @@
       real( c_double ), dimension(:), pointer :: ebarrier, de
 
 !  ::: Lecture of state and rate of each node
+      print*, " INPUT_EVENT: ",trim(struc% input_event)
       open( newunit=u0, file=trim(struc% input_event), iostat=ios )
       if ( ios /= 0 ) call error( "input_event does't open!!" )
 
@@ -70,9 +71,8 @@
       implicit none
 
       type( KMC_type ), intent( inout ) :: struc
-      integer :: i, jn, j, k, kn, dbd, l
-      real :: kt, ebd, f0
-      logical :: see
+      integer( c_int ) :: i, jn, j, k, kn, dbd, l
+      real( c_double ) :: kt, ebd, f0
 
       integer, dimension( struc% tot_sites ) :: bd, ddb, v
 
@@ -87,7 +87,6 @@
       call link_real1_ptr( struc% ptr_rate, rate, struc% tot_sites )
       call link_real2_ptr( struc% ptr_event_rate, event_rate, 10, struc% tot_sites )
 
-      see = .true.
       kt = struc% kt
       ebd = de( 1 )
       f0 = struc% f0
@@ -203,8 +202,8 @@
       use derived_types
       implicit none
       type( KMC_type ) :: struc
-      integer, intent( in ) :: is, jn
-      integer :: j
+      integer( c_int ), intent( in ) :: is, jn
+      integer( c_int ) :: j
 !      print*, " - To do :: Event_applied "
 
       integer( c_int ), dimension(:), pointer :: site, nneig

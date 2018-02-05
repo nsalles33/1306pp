@@ -25,43 +25,64 @@
 !
   Program Kernel
 !
+  use iso_c_binding
   use derived_types
   use KMC_routine
   use errors
+#ifdef SHARED_LIB
+  use dlopen_lib
+#endif
   implicit none
 !
   integer          :: nstep, u0, ios
   real             :: t_start, t_stop
 
   type( KMC_type ) :: sys 
+#ifdef SHARED_LIB
+  procedure( analyse ), bind( C ), pointer :: analyse_proc
+#endif
+! ................................................
 !
-! -=::: Input_file Recuperation ::=-
-  if ( iargc() >= 1 ) then
-     call getarg( 1, sys% input_file )
-  else
-     call print_error( " Execution : ./EXE.x input_file " ); 
+! ---------------- Input_file Recuperation 
+  if ( iargc() >= 1 ) then ; call getarg( 1, sys% input_file )
+  else ; call error( " Execution : ./EXE.x input_file " ); 
   endif    
   write (*,*) "Input_file : ", sys% input_file
-
-! -=::: SYSTEM INITIALIZATION :::=-
+!
+!
+! ---------------- SYSTEM INITIALIZATION 
+!
   call Init_system( sys )
-  call sys% init_table
 
- ! u0 = 161
+  call init_table( sys )
+
+!
+! ---------------- OPEN CONF FILE - - - - - - - - - - - - - - - - - - - - 
+
   open( newunit=u0, file="state_file.xyz",status="replace", iostat=ios )
     if (ios /= 0) call warning( " CAN'T OPEN => state_file.xyz " )
 
+! ---------------- - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+
+
+! ---------------- SYSTEM EVOLUTION
+!
   call cpu_time( t_start )
 !  call system_clock( t_start )
 
-! -=::: SYSTEM EVOLUTION :::=-
   nstep = 0
   call print_state( sys, nstep, u0 )
   do while ( nstep < sys% max_step )
 
      nstep = nstep + 1
      call algorithm( sys )
+#ifdef SHARED_LIB
+     call c_f_procpointer( proc_analyse, analyse_proc )
+     call analyse_proc( sys )
+#else
      call analyse( sys )
+#endif
      call print_state( sys, nstep, u0 )
 
   enddo
@@ -73,20 +94,19 @@
 !
   close( u0 )
 
-! -=::: ANALYSE & CONCLUSION :::=-
+! ---------------- CONCLUSION 
   !call print_conclusion( sys )
 
 
-! -=::: FINILIZATION :::=-
-  call sys% destroy
+! ---------------- FINILIZATION 
+#ifdef SHARED_LIB
+  call close_shared_lib
+#endif
+  call destructor_kmc_type( sys )
 
   end program Kernel
 
 ! =================================================================================================
-
-
-
-
 
 
 

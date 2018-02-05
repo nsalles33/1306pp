@@ -21,7 +21,7 @@
 
       !  ::: Lecture of state and rate of each node
       open( newunit=u0, file=trim(obj% input_event), iostat=ios )
-      if ( ios /= 0 ) call print_error( "input_event does't open!!" )
+      if ( ios /= 0 ) call error( "input_event does't open!!" )
 
       EOF = .false.
       do while ( .not.EOF )
@@ -38,10 +38,10 @@
 
       enddo
 !
-      call link_int1_ptr( struc% event% ptr_i_state, init_state, struc% event% nevent)
-      call link_int1_ptr( struc% event% ptr_f_state, final_state, struc% event% nevent)
-      call link_real1_ptr( struc% event% ptr_ebarrier, ebarrier, struc% event% nevent)
-      call link_real1_ptr( struc% event% ptr_de, de, struc% event% nevent)
+      call link_int1_ptr( obj% event% ptr_i_state, init_state, obj% event% nevent)
+      call link_int1_ptr( obj% event% ptr_f_state, final_state, obj% event% nevent)
+      call link_real1_ptr( obj% event% ptr_ebarrier, ebarrier, obj% event% nevent)
+      call link_real1_ptr( obj% event% ptr_de, de, obj% event% nevent)
 !
       do i = 1,obj% event% nevent/2
          read (u0,*) id, init_state(id), final_state(id), ebarrier(id), de(id)
@@ -70,21 +70,23 @@
       integer( c_int ) :: i, id, ievt, jevt, jn
       real( c_double ) :: kt, f0
 
-      integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, nevt
+      integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, &
+                                                 nevt
       integer( c_int ), dimension(:,:), pointer :: neig, event_site
-      real( c_double ), dimension(:), pointer :: de, rate
+      real( c_double ), dimension(:), pointer :: de, rate, ebarrier
       real( c_double ), dimension(:,:), pointer :: event_rate
-      call link_int1_ptr( struc% ptr_site,           site,        struc% tot_sites )
-      call link_int1_ptr( struc% ptr_nneig,          nneig,       struc% tot_sites )
-      call link_int1_ptr( struc% ptr_nevt,           nevt,        struc% tot_sites )
-      call link_int1_ptr( struc% event% ptr_i_state, init_state,  struc% tot_sites )
-      call link_int1_ptr( struc% event% ptr_f_state, final_state, struc% tot_sites )
-      call link_real1_ptr( struc% event% ptr_de,     de,          struc% tot_sites )
-      call link_real1_ptr( struc% ptr_rate,          rate,        struc% tot_sites )
+      call link_int1_ptr( obj% ptr_site,            site,        obj% tot_sites )
+      call link_int1_ptr( obj% ptr_nneig,           nneig,       obj% tot_sites )
+      call link_int1_ptr( obj% ptr_nevt,            nevt,        obj% tot_sites )
+      call link_int1_ptr( obj% event% ptr_i_state,  init_state,  obj% event% nevent )
+      call link_int1_ptr( obj% event% ptr_f_state,  final_state, obj% event% nevent )
+      call link_real1_ptr( obj% event% ptr_ebarrier, ebarrier,    obj% event% nevent )
+      call link_real1_ptr( obj% event% ptr_de,      de,          obj% event% nevent )
+      call link_real1_ptr( obj% ptr_rate,           rate,        obj% tot_sites )
 
-      call link_int2_ptr( struc% ptr_neig,           neig,        10, struc% tot_sites )
-      call link_int2_ptr( struc% ptr_event_site,     event_site,  10, struc% tot_sites )
-      call link_real2_ptr( struc% ptr_event_rate,    event_rate,  10, struc% tot_sites )
+      call link_int2_ptr( obj% ptr_neig,           neig,        10, obj% tot_sites )
+      call link_int2_ptr( obj% ptr_event_site,     event_site,  10, obj% tot_sites )
+      call link_real2_ptr( obj% ptr_event_rate,    event_rate,  10, obj% tot_sites )
 
       kt = obj% kt   
       f0 = obj% f0
@@ -102,6 +104,7 @@
 
          ievt = 0
          do jevt = 1,obj% event% nevent
+  !          write (*,*) i,jevt,init_state( jevt ), id
             if ( init_state( jevt ) == id ) then
                ievt = ievt + 1
                event_site( ievt, i ) = jevt
@@ -112,9 +115,10 @@
          do jevt = 1, nevt( i )
             event_rate( jevt, i ) = ebarrier( event_site(jevt, i) ) !f0*exp( - obj% event% ebarrier(evt_site(jevt, i))/kt )
             rate( i ) = rate( i ) + event_rate( jevt, i )
+   !         write (*,*) i,"event",jevt, event_site(jevt, i), ebarrier( event_site(jevt, i) )
          enddo
 
-         !write (*,*) " *** ", i, f0, obj% rate( i )
+   !      write (*,*) " *** ", i, f0, rate( i )
 
       enddo
 !
@@ -122,6 +126,7 @@
 ! .................................................................................................
 
     subroutine choose_event( struc, isite, ievent ) bind( C )
+      use iso_c_binding
       use derived_types
       use random
       implicit none
@@ -130,6 +135,11 @@
 
       integer( c_int ) :: i, jn
       real( c_double ) :: rsum, rdn, rrdn
+!
+      integer( c_int ), dimension(:), pointer :: nevt
+      real( c_double ), dimension(:,:), pointer :: event_rate
+      call link_int1_ptr( struc% ptr_nneig,       nevt,       struc% tot_sites )
+      call link_real2_ptr( struc% ptr_event_rate, event_rate, 10, struc% tot_sites )
 
 !      print*, " - To do :: choose_event "
       isite = 0 ; ievent = 0
@@ -140,10 +150,10 @@
       rsum = 0.0
       do i = 1,struc% tot_sites
       !
-         do jn = 1,struc% nevt( i )
+         do jn = 1,nevt( i )
       !  !
             ievent = jn
-            rsum = rsum + struc% event_rate( jn, i )
+            rsum = rsum + event_rate( jn, i )
 !            write (*,*) "rsum:",i ,jn ,rsum, struc% event_rate( jn, i )
             if ( rsum > rrdn ) exit
       !  !
@@ -160,43 +170,55 @@
     end subroutine choose_event
 ! .................................................................................................
 
-    subroutine event_applied( struc, is, jn )
+    subroutine event_applied( struc, is, jn ) bind( C )
+      use iso_c_binding
       use derived_types
       use errors
       implicit none
-      type( KMC_type )      :: struc
-      integer, intent( in ) :: is,   &  ! Site selected
-                               jn       ! "ievent" of site "is" selected 
-      integer :: jevt
+      type( KMC_type )               :: struc
+      integer( c_int ), intent( in ) :: is,   &  ! Site selected
+                                        jn       ! "ievent" of site "is" selected 
+      integer( c_int )               :: jevt
 
-      jevt = struc% event_site( jn, is )
+      integer( c_int ), dimension(:), pointer :: init_state, final_state, site
+      integer( c_int ), dimension(:,:), pointer :: event_site
+      call link_int1_ptr( struc% ptr_site,             site,             struc% tot_sites )
+      call link_int1_ptr( struc% event% ptr_i_state,   init_state,       struc% tot_sites )
+      call link_int1_ptr( struc% event% ptr_f_state,   final_state,      struc% tot_sites )
+      call link_int2_ptr( struc% ptr_event_site,       event_site,       10, struc% tot_sites )
 
-      if ( struc% site( is ) /= struc% event% init_state( jevt ) ) then
+      jevt = event_site( jn, is )
+
+      if ( site( is ) /= init_state( jevt ) ) then
          call warning( " Problem site state not correspond to initial state event ")
-!         write (*,*) is,struc% site( is ), (struc% neig(j,is),struc% site( struc%neig(j,is) ),j=1,struc% nneig(is))
-!         write (*,*) is,struc% rate( is ), (struc% neig(j,is),struc% event_rate( j,is ),j=1,struc% nneig(is))
       endif
       
-      struc% site( is ) = struc% event% final_state( jevt )
+      site( is ) = final_state( jevt )
 
     end subroutine event_applied
 ! .................................................................................................
 
-    subroutine analyse( obj ) 
+    subroutine analyse( obj ) bind( C )
+      use iso_c_binding
       use derived_types
       implicit none
 
       type( KMC_type ), intent( inout ) :: obj
-      integer                        :: i
+      integer( c_int )                  :: i
+
+      integer( c_int ), dimension(:), pointer :: site
+      real( c_double ), dimension(:), pointer :: prop
+      call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
+      call link_real1_ptr( obj% ptr_prop, prop, obj% nprop )
 
       !obj% txtprop( 1 ) = "  Cover (%) "
-      obj% prop( 1 ) = 0.0
+      prop( 1 ) = 0.0
 
       do i = 1, obj% tot_sites
-         if ( obj% site( i ) == 1 ) obj% prop( 1 ) = obj% prop(1) + 1
+         if ( site( i ) == 1 ) prop( 1 ) = prop( 1 ) + 1
       enddo
 
-      obj% prop(1) = obj% prop(1) / obj% tot_sites
+      prop(1) = prop(1) / obj% tot_sites
 
     end subroutine analyse
 ! .................................................................................................
