@@ -32,7 +32,7 @@
     procedure( event_applied ), bind( C ), pointer :: event_applied_proc
 #endif
 
-!    print*, " -= BKL Algorithm =- "
+    !print*, " -= BKL Algorithm =- "
 
     call rate_sum_calc( struc )
 
@@ -43,7 +43,7 @@
     call event_applied_proc( struc, isite, ievent )
 #else
     call choose_event( struc, isite, ievent )
-    call Event_Applied( struc, isite, ievent )
+    call event_applied( struc, isite, ievent )
 #endif
     call Time_increment( struc )
 
@@ -88,7 +88,7 @@
     call event_applied_proc( struc, isite, ievent )
 #else
     call choose_event( struc, isite, ievent )
-    call Event_Applied( struc, isite, ievent )
+    call event_applied( struc, isite, ievent )
 #endif
     call Time_increment( struc )
 

@@ -91,6 +91,7 @@
       kt = struc% kt
       ebd = de( 1 )
       f0 = struc% f0
+
 !
       do i = 1,struc% tot_sites
          rate( i ) = 0.0
@@ -140,15 +141,16 @@
             event_rate( jn, i ) = f0*exp( - dbd*ebd/kt )
             rate( i ) = rate( i ) + event_rate( jn, i )
 
-!            write (*,*) j, struc% nneig( j ), bd( j ), ddb( j ), v( j )
-!            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
-!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, struc% event_rate( jn, i )
+!            write (*,*) j, nneig( j ), bd( j ), ddb( j ), v( j )
+            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
+            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, event_rate( jn, i )
 
          enddo
-!         write (*,*) " *** ", i, f0, ebd, struc% rate( i )
+         write (*,*) " *** ", i, f0, kt,dbd, ebd, rate( i )
 !
 
       enddo
+      stop "calc_event"
 
     end subroutine event_rate_calc
 ! ..................................................................................................
@@ -182,7 +184,7 @@
       !  !
             ievent = jn
             rsum = rsum + event_rate( jn, i )
-!            write (*,*) "rsum:",i ,jn ,rsum, struc% event_rate( jn, i )
+!            write (*,*) "rsum:",i ,jn ,rsum, event_rate( jn, i )
             if ( rsum > rrdn ) exit
       !  !
          enddo
@@ -198,13 +200,13 @@
     end subroutine choose_event
 ! ..................................................................................................
     
-    subroutine event_applied( struc, is, jn ) bind( C )
+    subroutine event_applied( struc, is, jn )  
       use iso_c_binding
       use derived_types
       implicit none
       type( KMC_type ) :: struc
-      integer, intent( in ) :: is, jn
-      integer :: j
+      integer( c_int ), intent( in ) :: is, jn
+      integer( c_int ) :: j
 !      print*, " - To do :: Event_applied "
 
       integer( c_int ), dimension(:), pointer :: site, nneig

@@ -138,7 +138,7 @@
       this% sys_dim = 0
       this% per100 = 0.0
       
-      this% nsites(:) = 0
+      this% nsites(:) = 1
       
     end subroutine init_kmc_type
 ! ............................................................................

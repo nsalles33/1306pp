@@ -54,6 +54,10 @@
                call warning( "neig_list : index neig = 0 " )
                write (*,*) " neig_list :", id, j, neig(j,id)
             endif
+            if ( neig( j, id ) > struc% tot_sites ) then
+            call warning( "neig_list : index neig = TOT_SITES " )
+               print*, id, j, neig( j, id ),struc% tot_sites 
+            endif
          enddo
 
          !if (i < 4) &
