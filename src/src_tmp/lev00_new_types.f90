@@ -238,9 +238,9 @@
     end subroutine link_real2_ptr
 ! ............................................................................
 !
-    subroutine destructor_kmc_type ( this ) bind( C )
+    subroutine destructor_kmc_type()  bind( C )
       implicit none
-      type( KMC_type ) :: this
+      !type( KMC_type ) :: this
 !  :: destroy event_type
       call destructor_event_type !( this% event ) 
 
@@ -381,6 +381,7 @@
       call link_real1_ptr( this% ptr_prop, prop, this% nprop )
       
       if ( MODULO( step, this% freq_write ) /= 0 ) return 
+     ! write (*,*) " ...PRINT_STATE... "
 
       nx = this% nsites(1) 
       ny = this% nsites(2)
@@ -406,8 +407,8 @@
         write (*,*) "    Step   |    Time   |   rand_rate    |    rand_time    " !,( " | ",trim(this% txtprop(i)),i=1,this%nprop )
         write (*,*) " ----------------------------------------------------------------- "
       endif
-      write (*,'(1x,i6,4(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, prop(1) 
-      write (100,'(1x,i6,4(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, prop(1) 
+      write (*,'(1x,i6,4(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, (prop(i), i=1, this% nprop) 
+      write (100,'(1x,i6,4(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, (prop(i), i=1, this% nprop) 
 
     end subroutine print_state
 

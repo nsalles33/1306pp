@@ -38,7 +38,7 @@
       do while ( .not.EOF )
          call read_line( u0, string, EOF )
          call parse( trim(string), delims, args, nargs )
-         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
+!         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
 
          if ( args(1) == "Number_of_event" ) then
             read( args(2), '(i5)' ) nevent
@@ -131,8 +131,8 @@
             ddb( j ) = 0 ; bd( j ) = 0 ; v( i ) = 0
             do kn = 1,nneig(j)
                k = neig( kn, j )
-               if (k <= 0.or.k > struc% tot_sites)  &
-                 write (*,*) k,"PB system_rate",i,jn,j,(l,neig(l,j),l=1,nneig(j))
+!               if (k <= 0.or.k > struc% tot_sites)  &
+!                 write (*,*) k,"PB system_rate",i,jn,j,(l,neig(l,j),l=1,nneig(j))
                if ( site( k ) == 0 ) ddb( j ) = ddb( j ) + 1
                if ( site( k ) == 1 ) bd( j ) = bd( j ) + 1
             enddo
@@ -142,15 +142,15 @@
             rate( i ) = rate( i ) + event_rate( jn, i )
 
 !            write (*,*) j, nneig( j ), bd( j ), ddb( j ), v( j )
-            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
-            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, event_rate( jn, i )
+!            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
+!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, event_rate( jn, i )
 
          enddo
-         write (*,*) " *** ", i, f0, kt,dbd, ebd, rate( i )
+!         write (*,*) " *** ", i, f0, kt,dbd, ebd, rate( i )
 !
 
       enddo
-      stop "calc_event"
+!      stop "calc_event"
 
     end subroutine event_rate_calc
 ! ..................................................................................................

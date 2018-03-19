@@ -12,7 +12,7 @@
 !
 ! .................................................................................................
 
-    subroutine read_event( struc ) 
+    subroutine read_event( struc ) bind( C )
       use iso_c_binding
       use derived_types
       use errors
@@ -31,6 +31,7 @@
       real( c_double ), dimension(:), pointer :: ebarrier, de
 
 !  ::: Lecture of state and rate of each node
+      print*, " INPUT_EVENT: ",trim(struc% input_event)
       open( newunit=u0, file=trim(struc% input_event), iostat=ios )
       if ( ios /= 0 ) call error( "input_event does't open!!" )
 
@@ -38,7 +39,7 @@
       do while ( .not.EOF )
          call read_line( u0, string, EOF )
          call parse( trim(string), delims, args, nargs )
-!         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
+         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
 
          if ( args(1) == "Number_of_event" ) then
             read( args(2), '(i5)' ) nevent
@@ -63,16 +64,15 @@
     end subroutine read_event
 ! .................................................................................................
 
-    subroutine event_rate_calc( struc ) 
+    subroutine event_rate_calc( struc ) bind( C )
       use iso_c_binding
       use derived_types
       use errors
       implicit none
 
       type( KMC_type ), intent( inout ) :: struc
-      integer :: i, jn, j, k, kn, dbd, l
-      real :: kt, ebd, f0
-      logical :: see
+      integer( c_int ) :: i, jn, j, k, kn, dbd, l
+      real( c_double ) :: kt, ebd, f0
 
       integer, dimension( struc% tot_sites ) :: bd, ddb, v
 
@@ -87,11 +87,9 @@
       call link_real1_ptr( struc% ptr_rate, rate, struc% tot_sites )
       call link_real2_ptr( struc% ptr_event_rate, event_rate, 10, struc% tot_sites )
 
-      see = .true.
       kt = struc% kt
       ebd = de( 1 )
       f0 = struc% f0
-
 !
       do i = 1,struc% tot_sites
          rate( i ) = 0.0
@@ -131,8 +129,8 @@
             ddb( j ) = 0 ; bd( j ) = 0 ; v( i ) = 0
             do kn = 1,nneig(j)
                k = neig( kn, j )
-!               if (k <= 0.or.k > struc% tot_sites)  &
-!                 write (*,*) k,"PB system_rate",i,jn,j,(l,neig(l,j),l=1,nneig(j))
+               if (k <= 0.or.k > struc% tot_sites)  &
+                 write (*,*) k,"PB system_rate",i,jn,j,(l,neig(l,j),l=1,nneig(j))
                if ( site( k ) == 0 ) ddb( j ) = ddb( j ) + 1
                if ( site( k ) == 1 ) bd( j ) = bd( j ) + 1
             enddo
@@ -141,25 +139,25 @@
             event_rate( jn, i ) = f0*exp( - dbd*ebd/kt )
             rate( i ) = rate( i ) + event_rate( jn, i )
 
-!            write (*,*) j, nneig( j ), bd( j ), ddb( j ), v( j )
+!            write (*,*) j, struc% nneig( j ), bd( j ), ddb( j ), v( j )
 !            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
-!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, event_rate( jn, i )
+!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, struc% event_rate( jn, i )
 
          enddo
-!         write (*,*) " *** ", i, f0, kt,dbd, ebd, rate( i )
+!         write (*,*) " *** ", i, f0, ebd, struc% rate( i )
 !
 
       enddo
-!      stop "calc_event"
 
     end subroutine event_rate_calc
 ! ..................................................................................................
 
-    subroutine choose_event( struc, isite, ievent ) 
+    subroutine choose_event( struc, isite, ievent ) bind( C )
       use iso_c_binding
       use derived_types
       use random
       implicit none
+
       type( KMC_type ), intent( inout ) :: struc
       integer( c_int ), intent( inout ) :: isite, ievent
 
@@ -184,7 +182,7 @@
       !  !
             ievent = jn
             rsum = rsum + event_rate( jn, i )
-!            write (*,*) "rsum:",i ,jn ,rsum, event_rate( jn, i )
+!            write (*,*) "rsum:",i ,jn ,rsum, struc% event_rate( jn, i )
             if ( rsum > rrdn ) exit
       !  !
          enddo
@@ -200,7 +198,7 @@
     end subroutine choose_event
 ! ..................................................................................................
     
-    subroutine event_applied( struc, is, jn )  
+    subroutine event_applied( struc, is, jn ) bind( C )
       use iso_c_binding
       use derived_types
       implicit none
@@ -233,14 +231,99 @@
     end subroutine event_applied    
 ! ..................................................................................................
 
-    subroutine analyse( struc ) 
+    subroutine analyse( obj ) bind( C )
       use iso_c_binding
       use derived_types
       implicit none
-    
-      type( KMC_type ) :: struc
 
+      type( KMC_type ) :: obj
+      integer( c_int ) :: i, j, jv, k, kv, ngp, gpv, nc, mixgp, nvac, maxsize, max_gp
+
+      integer( c_int ), dimension( obj% tot_sites ) :: gp, histo
+      integer( c_int ), dimension( -1:int(obj% tot_sites/2)) :: clster
+      !
+      integer( c_int ), dimension(:), pointer :: site, nneig
+      integer( c_int ), dimension(:,:), pointer :: neig
+      real( c_double ), dimension(:), pointer :: prop
+      call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
+      call link_int1_ptr( obj% ptr_nneig, nneig, obj% tot_sites )
+      call link_int2_ptr( obj% ptr_neig, neig, 10, obj% tot_sites )
+      call link_real1_ptr( obj% ptr_prop, prop, obj% nprop )
+      !
+      ngp = 0 ; gp = 0 ; max_gp = 0
+      clster = 0 ; nvac = 0
+      do i = 1,obj% tot_sites
+         if ( site( i ) == 1 ) cycle
+         !
+         nvac = nvac + 1
+         nc = 0
+         gp( i ) = -1
+         gpv = 0 ; mixgp = 0
+         do jv = 1,nneig( i )
+            j = neig( jv, i )
+            !
+            if ( site( j ) == 1 ) cycle
+            !if ( gp( j ) == 0 ) gpn = 1 
+            !
+            if ( gp( j ) /= 0.and.gpv == 0 ) then
+               gpv = gp( j )
+            elseif ( gp( j ) /= 0.and.gpv /= 0.and.gp(j) /= gpv) then
+               mixgp = gp( j )
+            endif
+            !
+            nc = nc + 1
+            !gp( j ) = ngp           
+            !
+         enddo
+       !  write (*,*) i,nc,ngp,gpv,mixgp
+         !
+         if ( nc /= 0.and.gpv /= 0.and.mixgp == 0 ) then
+            gp( i ) = gpv
+         elseif ( nc /= 0.and.gpv == 0 ) then
+            ngp = ngp + 1
+            gp( i ) = ngp
+            do jv = 1,nneig( i )
+               j = neig( jv, i )
+               if ( site( j ) == 0 ) gp( j ) = gp( i )
+            enddo
+         elseif ( mixgp /= 0 ) then
+            !
+            gp( i ) = min( mixgp, gpv )
+            do j = 1,i-1
+               if ( site( j ) == 1 ) cycle
+               if ( gp( j ) == mixgp.or.gp( j ) == gpv ) then
+                  gp( j ) = gp( i )
+                  do kv = 1,nneig( j )
+                     k = neig( kv, j )
+                     if ( site( k ) == 0 ) gp( k ) = gp( i )
+                  enddo
+               endif
+            enddo
+            !
+         endif
+         !
+         clster( gp(i) ) = clster( gp(i) ) + 1
+         max_gp = max( max_gp, gp(i) )
+      !   write (*,*) i, gp(i), ngp, clster( gp(i) ), nvac
+         !
+      enddo
+      !
+      nvac = 0
+      histo = 0 ; maxsize = 1
+      histo( 1 ) = clster( -1 )
+      do i = 1,max_gp
+         nvac = nvac + clster( i )
+         histo( clster(i) ) = histo( clster(i) ) + 1
+         maxsize = max( maxsize, clster(i) )
+      enddo
+      prop( 1 ) = 0
+      do i = 1,maxsize
+         prop( 1 ) = prop( 1 ) + real(i*histo( i ))/real( clster(-1) + max_gp )
+!         write (*,*) prop(1),i,histo(i), clster(-1) , max_gp
+      enddo
+      !
     end subroutine analyse
+! ..................................................................................................
 ! ..................................................................................................
 
 !  end module diff_vac

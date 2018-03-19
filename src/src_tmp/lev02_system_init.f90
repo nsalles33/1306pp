@@ -8,8 +8,11 @@
     subroutine Init_system( struc )
       use derived_types
       use errors
+!      use lib_hub
 #ifdef SHARED_LIB 
       use dlopen_lib
+#else
+      use user_system
 #endif
       implicit none
 
@@ -33,6 +36,7 @@
 #else
       call read_event( struc )
 #endif
+!      call read_event_hub( struc )
 
         call print_event( struc% event )
 

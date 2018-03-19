@@ -12,7 +12,7 @@
 !
 ! .................................................................................................
 
-    subroutine read_event( struc )
+    subroutine read_event( struc ) 
       use iso_c_binding
       use derived_types
       use errors
@@ -30,7 +30,7 @@
       integer( c_int ), dimension(:), pointer :: init_state, final_state
       real( c_double ), dimension(:), pointer :: ebarrier, de
 
-      !  ::: Lecture of state and rate of each node
+!  ::: Lecture of state and rate of each node
       open( newunit=u0, file=trim(struc% input_event), iostat=ios )
       if ( ios /= 0 ) call error( "input_event does't open!!" )
 
@@ -38,7 +38,7 @@
       do while ( .not.EOF )
          call read_line( u0, string, EOF )
          call parse( trim(string), delims, args, nargs )
-         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
+!         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
 
          if ( args(1) == "Number_of_event" ) then
             read( args(2), '(i5)' ) nevent
@@ -63,7 +63,7 @@
     end subroutine read_event
 ! .................................................................................................
 
-    subroutine event_rate_calc( struc )
+    subroutine event_rate_calc( struc ) 
       use iso_c_binding
       use derived_types
       use errors
@@ -91,6 +91,7 @@
       kt = struc% kt
       ebd = de( 1 )
       f0 = struc% f0
+
 !
       do i = 1,struc% tot_sites
          rate( i ) = 0.0
@@ -130,8 +131,8 @@
             ddb( j ) = 0 ; bd( j ) = 0 ; v( i ) = 0
             do kn = 1,nneig(j)
                k = neig( kn, j )
-               if (k <= 0.or.k > struc% tot_sites)  &
-                 write (*,*) k,"PB system_rate",i,jn,j,(l,neig(l,j),l=1,nneig(j))
+!               if (k <= 0.or.k > struc% tot_sites)  &
+!                 write (*,*) k,"PB system_rate",i,jn,j,(l,neig(l,j),l=1,nneig(j))
                if ( site( k ) == 0 ) ddb( j ) = ddb( j ) + 1
                if ( site( k ) == 1 ) bd( j ) = bd( j ) + 1
             enddo
@@ -140,20 +141,21 @@
             event_rate( jn, i ) = f0*exp( - dbd*ebd/kt )
             rate( i ) = rate( i ) + event_rate( jn, i )
 
-!            write (*,*) j, struc% nneig( j ), bd( j ), ddb( j ), v( j )
+!            write (*,*) j, nneig( j ), bd( j ), ddb( j ), v( j )
 !            write (*,*) " dbd :",v( i ),'+',bd( j ),'-',ddb( i ),'-',ddb( j ),'+ 2 =',dbd
-!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, struc% event_rate( jn, i )
+!            write (*,*) i, jn, j, dbd,f0,kt,ebd, -dbd*ebd/kt, event_rate( jn, i )
 
          enddo
-!         write (*,*) " *** ", i, f0, ebd, struc% rate( i )
+!         write (*,*) " *** ", i, f0, kt,dbd, ebd, rate( i )
 !
 
       enddo
+!      stop "calc_event"
 
     end subroutine event_rate_calc
 ! ..................................................................................................
 
-    subroutine choose_event( struc, isite, ievent )
+    subroutine choose_event( struc, isite, ievent ) 
       use iso_c_binding
       use derived_types
       use random
@@ -182,7 +184,7 @@
       !  !
             ievent = jn
             rsum = rsum + event_rate( jn, i )
-!            write (*,*) "rsum:",i ,jn ,rsum, struc% event_rate( jn, i )
+!            write (*,*) "rsum:",i ,jn ,rsum, event_rate( jn, i )
             if ( rsum > rrdn ) exit
       !  !
          enddo
@@ -198,13 +200,13 @@
     end subroutine choose_event
 ! ..................................................................................................
     
-    subroutine event_applied( struc, is, jn )
+    subroutine event_applied( struc, is, jn )  
       use iso_c_binding
       use derived_types
       implicit none
       type( KMC_type ) :: struc
-      integer, intent( in ) :: is, jn
-      integer :: j
+      integer( c_int ), intent( in ) :: is, jn
+      integer( c_int ) :: j
 !      print*, " - To do :: Event_applied "
 
       integer( c_int ), dimension(:), pointer :: site, nneig
@@ -231,7 +233,7 @@
     end subroutine event_applied    
 ! ..................................................................................................
 
-    subroutine analyse( struc )
+    subroutine analyse( struc ) 
       use iso_c_binding
       use derived_types
       implicit none
