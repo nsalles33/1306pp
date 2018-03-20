@@ -1,4 +1,4 @@
-compiler = gfortran-mp-7
+compiler = gfortran
 objects = routines.o maintest.o
 flags = -O
 double = -fdefault-real-8
