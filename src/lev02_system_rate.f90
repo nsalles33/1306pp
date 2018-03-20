@@ -5,10 +5,7 @@
     subroutine rate_sum_calc( struc )
       use iso_c_binding
       use derived_types
-
-#ifdef SHARED_LIB
-      use dlopen_lib
-#endif
+      use lib_hub
 
       implicit none
 
@@ -18,14 +15,7 @@
 
       real( c_double ), dimension(:), pointer :: rate
 
-#ifdef SHARED_LIB
-      procedure( event_rate_calc ), bind( C ), pointer :: event_rate_calc_proc
-
-      call c_f_procpointer( proc_event_rate_calc, event_rate_calc_proc )
-      call event_rate_calc_proc( struc )
-#else
-      call event_rate_calc( struc )
-#endif
+      call event_rate_calc_hub( struc )
 !
 !  -- Sum over all the site
 !

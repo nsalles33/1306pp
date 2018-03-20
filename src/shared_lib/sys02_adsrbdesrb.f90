@@ -28,7 +28,7 @@
 
          call read_line( u0, string, EOF )
          call parse( trim(string), delims, args, nargs )
-!         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
+         write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
 
          if ( args(1) == "Number_of_event" ) then
             read( args(2), '(i5)' ) nevent

@@ -157,6 +157,7 @@
       use derived_types
       use random
       implicit none
+
       type( KMC_type ), intent( inout ) :: struc
       integer( c_int ), intent( inout ) :: isite, ievent
 
@@ -230,14 +231,99 @@
     end subroutine event_applied    
 ! ..................................................................................................
 
-    subroutine analyse( struc ) bind( C )
+    subroutine analyse( obj ) bind( C )
       use iso_c_binding
       use derived_types
       implicit none
-    
-      type( KMC_type ) :: struc
 
+      type( KMC_type ) :: obj
+      integer( c_int ) :: i, j, jv, k, kv, ngp, gpv, nc, mixgp, nvac, maxsize, max_gp
+
+      integer( c_int ), dimension( obj% tot_sites ) :: gp, histo
+      integer( c_int ), dimension( -1:int(obj% tot_sites/2)) :: clster
+      !
+      integer( c_int ), dimension(:), pointer :: site, nneig
+      integer( c_int ), dimension(:,:), pointer :: neig
+      real( c_double ), dimension(:), pointer :: prop
+      call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
+      call link_int1_ptr( obj% ptr_nneig, nneig, obj% tot_sites )
+      call link_int2_ptr( obj% ptr_neig, neig, 10, obj% tot_sites )
+      call link_real1_ptr( obj% ptr_prop, prop, obj% nprop )
+      !
+      ngp = 0 ; gp = 0 ; max_gp = 0
+      clster = 0 ; nvac = 0
+      do i = 1,obj% tot_sites
+         if ( site( i ) == 1 ) cycle
+         !
+         nvac = nvac + 1
+         nc = 0
+         gp( i ) = -1
+         gpv = 0 ; mixgp = 0
+         do jv = 1,nneig( i )
+            j = neig( jv, i )
+            !
+            if ( site( j ) == 1 ) cycle
+            !if ( gp( j ) == 0 ) gpn = 1 
+            !
+            if ( gp( j ) /= 0.and.gpv == 0 ) then
+               gpv = gp( j )
+            elseif ( gp( j ) /= 0.and.gpv /= 0.and.gp(j) /= gpv) then
+               mixgp = gp( j )
+            endif
+            !
+            nc = nc + 1
+            !gp( j ) = ngp           
+            !
+         enddo
+       !  write (*,*) i,nc,ngp,gpv,mixgp
+         !
+         if ( nc /= 0.and.gpv /= 0.and.mixgp == 0 ) then
+            gp( i ) = gpv
+         elseif ( nc /= 0.and.gpv == 0 ) then
+            ngp = ngp + 1
+            gp( i ) = ngp
+            do jv = 1,nneig( i )
+               j = neig( jv, i )
+               if ( site( j ) == 0 ) gp( j ) = gp( i )
+            enddo
+         elseif ( mixgp /= 0 ) then
+            !
+            gp( i ) = min( mixgp, gpv )
+            do j = 1,i-1
+               if ( site( j ) == 1 ) cycle
+               if ( gp( j ) == mixgp.or.gp( j ) == gpv ) then
+                  gp( j ) = gp( i )
+                  do kv = 1,nneig( j )
+                     k = neig( kv, j )
+                     if ( site( k ) == 0 ) gp( k ) = gp( i )
+                  enddo
+               endif
+            enddo
+            !
+         endif
+         !
+         clster( gp(i) ) = clster( gp(i) ) + 1
+         max_gp = max( max_gp, gp(i) )
+      !   write (*,*) i, gp(i), ngp, clster( gp(i) ), nvac
+         !
+      enddo
+      !
+      nvac = 0
+      histo = 0 ; maxsize = 1
+      histo( 1 ) = clster( -1 )
+      do i = 1,max_gp
+         nvac = nvac + clster( i )
+         histo( clster(i) ) = histo( clster(i) ) + 1
+         maxsize = max( maxsize, clster(i) )
+      enddo
+      prop( 1 ) = 0
+      do i = 1,maxsize
+         prop( 1 ) = prop( 1 ) + real(i*histo( i ))/real( clster(-1) + max_gp )
+!         write (*,*) prop(1),i,histo(i), clster(-1) , max_gp
+      enddo
+      !
     end subroutine analyse
+! ..................................................................................................
 ! ..................................................................................................
 
 !  end module diff_vac

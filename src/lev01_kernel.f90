@@ -30,6 +30,7 @@
   use derived_types
   use KMC_routine
   use errors
+  use lib_hub  
 
 #ifdef SHARED_LIB
   use dlopen_lib
@@ -42,9 +43,6 @@
   !
   type( KMC_type ) :: sys 
   !
-#ifdef SHARED_LIB
-  procedure( analyse ), bind( C ), pointer :: analyse_proc
-#endif
   ! ................................................
   !
   ! ---------------- Input_file Recuperation 
@@ -76,20 +74,17 @@
 !  call system_clock( t_start )
   !
   nstep = 0
+  if ( MODULO( nstep, sys% freq_write ) == 0 ) &
+    call analysis( sys )
   call print_state( sys, nstep, u0 )
+  !
   do while ( nstep < sys% max_step )
      !
      nstep = nstep + 1
      call algorithm( sys )
      !
-#ifdef SHARED_LIB
-       !
-       call c_f_procpointer( proc_analyse, analyse_proc )
-       call analyse_proc( sys )
-       !
-#else
-       call analyse( sys )
-#endif
+     if ( MODULO( nstep, sys% freq_write ) == 0 ) &
+        call analysis( sys )
      !
      call print_state( sys, nstep, u0 )
      !
@@ -111,7 +106,7 @@
     call close_shared_lib
 #endif
   !
-  call destructor_kmc_type( sys )
+  call destructor_kmc_type
   !
   end program Kernel
 

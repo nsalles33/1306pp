@@ -1,5 +1,20 @@
 
-
+  module user_system
+    use derived_types
+    implicit none
+    !
+    integer( c_int ), dimension(:), pointer :: site, nneig, nevt
+    integer( c_int ), dimension(:,:), pointer :: neig, event_site
+    !
+    real( c_double ), dimension(:), pointer :: rate, prop
+    real( c_double ), dimension(:,:), pointer :: event_rate
+    !
+    ! ::: EVENT
+    integer( c_int ), dimension(:), pointer :: init_state, final_state
+    real( c_double ), dimension(:), pointer :: ebarrier, de
+    !
+   contains
+    !
     subroutine read_event( obj )
       use iso_c_binding
       use derived_types
@@ -16,8 +31,6 @@
       CHARACTER (len=100, kind=c_char), dimension (50) :: args
       integer( c_int ) :: nargs
 
-      integer( c_int ), dimension(:), pointer :: init_state, final_state
-      real( c_double ), dimension(:), pointer :: ebarrier, de
 
       !  ::: Lecture of state and rate of each node
       open( newunit=u0, file=trim(obj% input_event), iostat=ios )
@@ -70,23 +83,23 @@
       integer( c_int ) :: i, id, ievt, jevt, jn
       real( c_double ) :: kt, f0
 
-      integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, &
-                                                 nevt
-      integer( c_int ), dimension(:,:), pointer :: neig, event_site
-      real( c_double ), dimension(:), pointer :: de, rate, ebarrier
-      real( c_double ), dimension(:,:), pointer :: event_rate
-      call link_int1_ptr( obj% ptr_site,            site,        obj% tot_sites )
-      call link_int1_ptr( obj% ptr_nneig,           nneig,       obj% tot_sites )
-      call link_int1_ptr( obj% ptr_nevt,            nevt,        obj% tot_sites )
-      call link_int1_ptr( obj% event% ptr_i_state,  init_state,  obj% event% nevent )
-      call link_int1_ptr( obj% event% ptr_f_state,  final_state, obj% event% nevent )
+!      integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, &
+!                                                 nevt
+!      integer( c_int ), dimension(:,:), pointer :: neig, event_site
+!      real( c_double ), dimension(:), pointer :: de, rate, ebarrier
+!      real( c_double ), dimension(:,:), pointer :: event_rate
+      call link_int1_ptr(  obj% ptr_site,            site,        obj% tot_sites )
+      call link_int1_ptr(  obj% ptr_nneig,           nneig,       obj% tot_sites )
+      call link_int1_ptr(  obj% ptr_nevt,            nevt,        obj% tot_sites )
+      call link_int1_ptr(  obj% event% ptr_i_state,  init_state,  obj% event% nevent )
+      call link_int1_ptr(  obj% event% ptr_f_state,  final_state, obj% event% nevent )
       call link_real1_ptr( obj% event% ptr_ebarrier, ebarrier,    obj% event% nevent )
-      call link_real1_ptr( obj% event% ptr_de,      de,          obj% event% nevent )
-      call link_real1_ptr( obj% ptr_rate,           rate,        obj% tot_sites )
+      call link_real1_ptr( obj% event% ptr_de,       de,          obj% event% nevent )
+      call link_real1_ptr( obj% ptr_rate,            rate,        obj% tot_sites )
 
-      call link_int2_ptr( obj% ptr_neig,           neig,        10, obj% tot_sites )
-      call link_int2_ptr( obj% ptr_event_site,     event_site,  10, obj% tot_sites )
-      call link_real2_ptr( obj% ptr_event_rate,    event_rate,  10, obj% tot_sites )
+      call link_int2_ptr(  obj% ptr_neig,           neig,        10, obj% tot_sites )
+      call link_int2_ptr(  obj% ptr_event_site,     event_site,  10, obj% tot_sites )
+      call link_real2_ptr( obj% ptr_event_rate,     event_rate,  10, obj% tot_sites )
 
       kt = obj% kt   
       f0 = obj% f0
@@ -136,8 +149,8 @@
       integer( c_int ) :: i, jn
       real( c_double ) :: rsum, rdn, rrdn
 !
-      integer( c_int ), dimension(:), pointer :: nevt
-      real( c_double ), dimension(:,:), pointer :: event_rate
+!      integer( c_int ), dimension(:), pointer :: nevt
+!      real( c_double ), dimension(:,:), pointer :: event_rate
       call link_int1_ptr( struc% ptr_nneig,       nevt,       struc% tot_sites )
       call link_real2_ptr( struc% ptr_event_rate, event_rate, 10, struc% tot_sites )
 
@@ -162,7 +175,7 @@
          isite = i
          if ( rsum > rrdn ) exit
       enddo
-      if ( rsum <= rrdn ) write (*,*) " PB choose event...", rsum,struc% sum_rate
+      if ( rsum <= rrdn ) write (*,*) " PB choose event...", rsum,struc% sum_rate, rrdn, rdn, isite, ievent
 !      write (*,*) struc% sum_rate,rdn,rrdn,rsum
 !      write (*,'(2(a,1x,i6))') " We Choose on site ", isite," event ",ievent
 !      write (*,*) struc% site( isite ), struc% site( struc% neig( ievent,isite ) )
@@ -180,8 +193,8 @@
                                         jn       ! "ievent" of site "is" selected 
       integer( c_int )               :: jevt
 
-      integer( c_int ), dimension(:), pointer :: init_state, final_state, site
-      integer( c_int ), dimension(:,:), pointer :: event_site
+!      integer( c_int ), dimension(:), pointer :: init_state, final_state, site
+!      integer( c_int ), dimension(:,:), pointer :: event_site
       call link_int1_ptr( struc% ptr_site,             site,             struc% tot_sites )
       call link_int1_ptr( struc% event% ptr_i_state,   init_state,       struc% tot_sites )
       call link_int1_ptr( struc% event% ptr_f_state,   final_state,      struc% tot_sites )
@@ -206,8 +219,8 @@
       type( KMC_type ), intent( inout ) :: obj
       integer( c_int )                  :: i
 
-      integer( c_int ), dimension(:), pointer :: site
-      real( c_double ), dimension(:), pointer :: prop
+!      integer( c_int ), dimension(:), pointer :: site
+!      real( c_double ), dimension(:), pointer :: prop
       call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
       call link_real1_ptr( obj% ptr_prop, prop, obj% nprop )
 
@@ -223,7 +236,7 @@
     end subroutine analyse
 ! .................................................................................................
 
-
+  end module user_system
 
 
 
