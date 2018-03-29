@@ -24,11 +24,11 @@
 !  
 ! =================================================================================================
 !
-  Program Kernel
+Program Kernel
   !
   use iso_c_binding
   use derived_types
-  use KMC_routine
+  use sub_new_types
   use errors
   use lib_hub  
 
@@ -49,6 +49,7 @@
   if ( iargc() >= 1 ) then ; call getarg( 1, sys% input_file )
   else ; call error( " Execution : ./EXE.x input_file " ); 
   endif    
+  sys% input_file= trim(sys% input_file)//c_null_char
   write (*,*) "Input_file : ", sys% input_file
   !
   !
@@ -71,7 +72,7 @@
   ! ---------------- SYSTEM EVOLUTION
   !
   call cpu_time( t_start )
-!  call system_clock( t_start )
+  !call system_clock( t_start )
   !
   nstep = 0
   if ( MODULO( nstep, sys% freq_write ) == 0 ) &
@@ -82,6 +83,7 @@
      !
      nstep = nstep + 1
      call algorithm( sys )
+     !stop " Kernel..."
      !
      if ( MODULO( nstep, sys% freq_write ) == 0 ) &
         call analysis( sys )
@@ -91,16 +93,13 @@
   enddo
   !
   call cpu_time( t_stop )
-!  call system_clock( t_stop )
+  !call system_clock( t_stop )
   !
   write (*,'(a,1x,f15.6,1x,a)') " TIME elapse :", t_stop - t_start, " second "
   !
   close( u0 )
   !
-  ! ---------------- CONCLUSION 
-  !call print_conclusion( sys )
-
-
+  !
   ! ---------------- FINILIZATION 
 #ifdef SHARED_LIB
     call close_shared_lib
@@ -108,7 +107,7 @@
   !
   call destructor_kmc_type
   !
-  end program Kernel
+end program Kernel
 
 ! =================================================================================================
 

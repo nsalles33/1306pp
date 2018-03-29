@@ -5,7 +5,8 @@
     subroutine rate_sum_calc( struc )
       use iso_c_binding
       use derived_types
-      use lib_hub
+      use sub_new_types
+      use lib_hub, only : event_rate_calc_hub
 
       implicit none
 
@@ -15,6 +16,7 @@
 
       real( c_double ), dimension(:), pointer :: rate
 
+      !write (*,*) " EVENT_RATE_CALC_HUB... "
       call event_rate_calc_hub( struc )
 !
 !  -- Sum over all the site
@@ -26,7 +28,7 @@
       enddo
       struc% sum_rate = sum_rate
 !
-!      write (*,*) " DONE "
+      !write (*,*) " DONE "
 !
     end subroutine rate_sum_calc
 ! ..................................................................................................

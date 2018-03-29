@@ -5,20 +5,28 @@
 ! =================================================================================================
 
   subroutine Algorithm( struc )
+    use iso_c_binding
     use derived_types
     implicit none
-
+    !
     type( KMC_type ) :: struc
-    
-    if ( trim(struc% algorithm) == 'BKL' ) call algo_BKL( struc )
-    if ( trim(struc% algorithm) == 'Gillepsie' ) call algo_Gillepsie( struc )
-
+    character (len=3) :: temp1
+    character (len=9) :: temp2
+    !
+    !
+    temp1 = trim(struc% algorithm)
+    if ( trim(struc% algorithm) == 'BKL' ) call algo_bkl( struc )
+    if ( temp1 == 'BKL' ) call algo_bkl( struc )
+    !
+    temp2 = trim(struc% algorithm)
+    !if ( trim(struc% algorithm) == 'Gillepsie' ) call algo_Gillepsie( struc )
+    if ( temp2 == 'Gillepsie' ) call algo_Gillepsie( struc )
+    !
   end subroutine Algorithm
 ! =================================================================================================
 
   subroutine algo_bkl( struc )
     use derived_types
-    use KMC_routine
     use lib_hub
     implicit none
 
@@ -34,6 +42,7 @@
     call event_applied_hub( struc, isite, ievent )
 
     call Time_increment( struc )
+    !stop " in algo_BKL..."
 
   end subroutine algo_bkl
 ! .................................................................................................
@@ -56,7 +65,6 @@
 
   subroutine algo_gillepsie( struc )
     use derived_types
-    use KMC_routine
     use lib_hub
     implicit none
 

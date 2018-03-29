@@ -43,6 +43,7 @@ module dlopen_lib
 
   end interface
 ! ..................................................................................................
+
   abstract interface
    
         subroutine read_event( obj ) bind( C )
@@ -92,9 +93,16 @@ contains
     implicit none
 
     type( KMC_type ), intent( inout ) :: obj
+    integer( c_int ) :: len,i
     
+    !len = 0
+    !do 
+    !  if( obj% libname(len+1) == C_NULL_CHAR ) exit
+    !  len = len + 1
+    !enddo
+    !print*, 'SHARED LIB: ',(obj% libname(i),i=1,len)
     print*, 'SHARED LIB: ',obj% libname
-    handle = dlopen( trim(obj% libname), RTLD_LAZY )
+    handle = dlopen( obj% libname, RTLD_LAZY )
     if ( .not.c_associated(handle) )  &
       call error( "Problem in opening dynamic library..." )
       

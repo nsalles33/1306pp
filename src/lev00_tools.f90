@@ -52,32 +52,32 @@
       delim2 = '"'
       
       tab = char(9)
-!      write (*,*) 'length of tab', len(tab)
+      !write (*,*) 'length of tab', len(tab)
       strgtmp = TRIM(adjustl(instring))
-!      write (*,*) 'in ',strgtmp
+      !write (*,*) 'in ',strgtmp
 
       nargs = 0
       nmax = size(args)
       do
         leng = len(trim(strgtmp))
-!        write (*,*) 'do',nargs+1,trim(strgtmp),':o'
+        !write (*,*) 'do',nargs+1,trim(strgtmp),':o'
         if (leng == 0) exit
         nargs = nargs + 1
-!        write (*,*) 'length',leng,len(instring)
+        !write (*,*) 'length',leng,len(instring)
         if ( strgtmp(1:1) == delim2 ) then
            indexs = SCAN(strgtmp(1:leng),delim2,.true.)
-!           write (*,*) "Element trouver ",strgtmp(1:1)," second ",indexs,leng
+           !write (*,*) "Element trouver ",strgtmp(1:1)," second ",indexs,leng
            args(nargs) = strgtmp(2:indexs-1)
            strgtmp = trim(adjustl(strgtmp(indexs+1:leng)))
            cycle
         elseif ( strgtmp(1:1) == tab ) then
-!           write (*,*) " Tab trouver..."
+           !write (*,*) " Tab trouver..."
            indexs = VERIFY(strgtmp(2:leng),tab)
-!           write (*,*) " prochain non tab ", indexs
+           !write (*,*) " prochain non tab ", indexs
            strgtmp = trim(adjustl(strgtmp(indexs+1:leng)))
-!           cycle
-     !   elseif ( SCAN(strgtmp,delims) > SCAN(strgtmp,tab) ) then
-     !      write (*,*) " Tab avant space"    
+           !cycle
+        !elseif ( SCAN(strgtmp,delims) > SCAN(strgtmp,tab) ) then
+           !write (*,*) " Tab avant space"    
         endif
         indexs = SCAN(strgtmp,delims)
         test = SCAN(strgtmp,char(9))
@@ -86,9 +86,53 @@
         strgtmp = trim(adjustl(strgtmp(indexs+1:leng)))
         if (nargs == nmax) exit
       enddo
-!
-!      write (*,*) nargs,'out ',(trim(args(i)),i=1,nargs)
+      !
+      !write (*,*) nargs,'out ',(trim(args(i)),i=1,nargs)
       end subroutine parse
+! .............................................................................
+ !
+ !  subroutine link_int1_ptr( ptr_c, ptr_f, n ) bind( C )
+ !    use iso_c_binding
+ !    implicit none
+ !    type( c_ptr ) :: ptr_c
+ !    integer( c_int ), intent( in ) :: n
+ !    integer( c_int ), dimension(:), pointer :: ptr_f
+ !    call c_f_pointer( ptr_c, ptr_f, shape=[ n ] )
+ !  end subroutine link_int1_ptr
+!!............................................................................
+
+ !  subroutine link_int2_ptr( ptr_c, ptr_f, n, m ) bind( C )
+ !    use iso_c_binding
+ !    implicit none
+ !    type( c_ptr ) :: ptr_c
+ !    integer( c_int ), intent( in ) :: n, m
+ !    integer( c_int ), dimension(:,:), pointer :: ptr_f
+ !    call c_f_pointer( ptr_c, ptr_f, shape=[n,m] )
+ !  end subroutine link_int2_ptr
+!!............................................................................
+
+ !  subroutine link_real1_ptr( ptr_c, ptr_f, n ) bind( C )
+ !    use iso_c_binding
+ !    implicit none
+ !    type( c_ptr ) :: ptr_c
+ !    integer( c_int ), intent( in ) :: n
+ !    real( c_double ), dimension(:), pointer :: ptr_f
+ !    call c_f_pointer( ptr_c, ptr_f, shape=[ n ] )
+ !  end subroutine link_real1_ptr
+!!............................................................................
+
+ !  subroutine link_real2_ptr( ptr_c, ptr_f, n, m ) bind( C )
+ !    use iso_c_binding
+ !    implicit none
+ !    type( c_ptr ) :: ptr_c
+ !    integer( c_int ), intent( in ) :: n,m
+ !    real( c_double ), dimension(:,:), pointer :: ptr_f
+ !    call c_f_pointer( ptr_c, ptr_f, shape=[ n,m ] )
+ !  end subroutine link_real2_ptr
+! ............................................................................
+
+
+
 ! .............................................................................
 
       subroutine sort1( n, vect )

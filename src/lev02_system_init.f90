@@ -7,6 +7,7 @@
 
     subroutine Init_system( struc )
       use derived_types
+      use sub_new_types
       use errors
 !      use lib_hub
 #ifdef SHARED_LIB 
@@ -25,6 +26,7 @@
 
 !  ::: Read input_file
       call read_input( struc )
+      print*, "... sortie de read_input -> print_kmc_type"
          call print_kmc_type( struc )
 
 !  ::: READ EVENT FILE
@@ -51,6 +53,7 @@
 
     subroutine read_input( struc )
       use derived_types
+      use sub_new_types
       use errors
       implicit none
 
@@ -90,13 +93,22 @@
          if ( args(1) == "nsite_y" )          read ( args(2), '(i5)' ) struc% nsites(2)
          if ( args(1) == "nsite_z" )          read ( args(2), '(i5)' ) struc% nsites(3)
 
-         if ( args(1) == "node_prop" )        read ( args(2), '(i5)' ) node_state
-         if ( args(1) == "input_event" )      read ( args(2), '(a)'  ) struc% input_event
+         if ( args(1) == "node_prop" ) then
+            read ( args(2), '(i5)' ) struc% node_state
+            struc% event% nbond = struc% node_state
+         endif
+         if ( args(1) == "input_event" ) then
+            read ( args(2), '(a)'  ) struc% input_event
+            struc% input_event = trim(struc% input_event)//c_null_char
+         endif
          if ( args(1) == "shared_library" ) then
             read ( args(2), '(a)'  ) struc% libname
             struc% libname = trim( struc% libname )//c_null_char
          endif
-         if ( args(1) == "algorithm" )        read ( args(2), '(a)'  ) struc% algorithm
+         if ( args(1) == "algorithm" ) then
+            read ( args(2), '(a)'  ) struc% algorithm
+            struc% algorithm = trim(struc% algorithm)//c_null_char
+         endif
          if ( args(1) == "temperature" )      read ( args(2), '(f6.6)' ) struc% temp
          if ( args(1) == "nstep" )            read ( args(2), '(I6)' ) struc% max_step
          if ( args(1) == "freq_write" )       read ( args(2), '(I6)' ) struc% freq_write
@@ -122,12 +134,15 @@
 !        call builder_kmc_type( sys_dim, nsites, size_y=ny, size_z=nz, algorithm=algo_txt, temperature=temp, step=nstep )
        call builder_kmc_type( struc ) 
 
+       print*, "On sort de read_input..."
+
     end subroutine read_input
 ! =================================================================================================
 
    subroutine distribution_state ( struc )
      use iso_c_binding
      use derived_types
+     use sub_new_types
      use random
      implicit none 
      type( KMC_type ), intent( inout ) :: struc
@@ -137,7 +152,7 @@
      integer( c_int ), dimension(:), pointer :: site
      call link_int1_ptr( struc% ptr_site, site, struc% tot_sites )
 
-     if ( struc% per100 == 0.0 ) call warning('DIST_STATE: per100 is 0.0!!!')
+     if ( struc% per100 == 0.0 ) call warning("DIST_STATE: per100 is 0.0!!!")
 
      call set_random_seed()
 

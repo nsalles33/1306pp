@@ -4,6 +4,7 @@ program test
 #if defined( SHARED_LIB )
   use dlopen_lib
 #endif
+  use buffer
   use type_def
   implicit none
 
@@ -22,6 +23,9 @@ program test
   call fix_a( array% ptr, array% n )
   call link_ptr( array% ptr, ptr_a, array% n )
 
+  array% p(1) = 99
+  array% p(2) = 98
+  array% p(3) = 97
 
   j = 10
   do i = 1,array% n 

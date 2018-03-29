@@ -3,7 +3,7 @@
 !
 
   module lib_hub
-!    use iso_c_binding
+    use iso_c_binding
     use derived_types
 
 #ifdef SHARED_LIB
@@ -17,9 +17,9 @@
 #ifdef SHARED_LIB
 !    procedure( read_event ), bind( C ), pointer :: read_event_proc
     procedure( event_rate_calc ), bind( C ), pointer :: event_rate_calc_proc
-    procedure( choose_event ), bind( C ), pointer :: choose_event_proc
-    procedure( event_applied ), bind( C ), pointer :: event_applied_proc
-    procedure( analyse ), bind( C ), pointer :: analyse_proc
+    procedure( choose_event ),    bind( C ), pointer :: choose_event_proc
+    procedure( event_applied ),   bind( C ), pointer :: event_applied_proc
+    procedure( analyse ),         bind( C ), pointer :: analyse_proc
 #endif
 
   contains
@@ -83,6 +83,7 @@
 #ifdef SHARED_LIB
 !      procedure( analyse ), bind( C ), pointer :: analyse_proc
       !
+      !print*, ' goto analyse_proc...'
       call c_f_procpointer( proc_analyse, analyse_proc )
       call analyse_proc( obj )
       !
