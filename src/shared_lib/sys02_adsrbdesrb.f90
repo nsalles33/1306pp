@@ -1,15 +1,31 @@
+  module variables
+    use iso_c_binding
+    implicit none
+    !
+    integer( c_int ), dimension(:), pointer :: site, nneig, neig, nevt, spec, event_site
+    !
+    real( c_double ), dimension(:), pointer :: rate, prop, event_rate
+    !
+    ! ::: EVENT
+    integer( c_int ), dimension(:), pointer :: init_state, final_state
+    real( c_double ), dimension(:), pointer :: ebarrier, de
+    real( c_double ), dimension(:,:), pointer :: ebond
+    !
+  end module variables
 
+! ..............................................................................................
 
     subroutine read_event( obj ) bind( C )
       use iso_c_binding
       use derived_types
       use sub_new_types
       use errors
+      use variables
       implicit none
 
       type( KMC_type ), intent( inout ) :: obj
 
-      character (len=50,kind=c_char)    :: string
+      character (len=500,kind=c_char)   :: string
       integer( c_int )                  :: u0, i, id, ios, nevent
       logical                           :: EOF
 
@@ -17,8 +33,8 @@
       CHARACTER (len=100, kind=c_char), dimension (50) :: args
       integer( c_int ) :: nargs
 
-      integer( c_int ), dimension(:), pointer :: init_state, final_state
-      real( c_double ), dimension(:), pointer :: ebarrier, de
+      !integer( c_int ), dimension(:), pointer :: init_state, final_state
+      !real( c_double ), dimension(:), pointer :: ebarrier, de
 
       !  ::: Lecture of state and rate of each node
       open( newunit=u0, file=trim(obj% input_event), iostat=ios )
@@ -65,6 +81,7 @@
       use derived_types
       use sub_new_types
       use errors
+      use variables
       implicit none
 
       type( KMC_type ), intent( inout ) :: obj
@@ -72,9 +89,9 @@
       integer( c_int ) :: i, id, ievt, jevt, j0
       real( c_double ) :: kt, f0
 
-      integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, &
-                                                 nevt, neig, event_site
-      real( c_double ), dimension(:), pointer :: de, rate, ebarrier, event_rate
+      !integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, &
+      !                                           nevt, neig, event_site
+      !real( c_double ), dimension(:), pointer :: de, rate, ebarrier, event_rate
 
       call link_int1_ptr( obj% ptr_site,            site,        obj% tot_sites )
       call link_int1_ptr( obj% ptr_nneig,           nneig,       obj% tot_sites )
@@ -135,6 +152,7 @@
       use derived_types
       use sub_new_types
       use random
+      use variables
       implicit none
       type( KMC_type ), intent( inout ) :: struc
       integer( c_int ), intent( inout ) :: isite, ievent
@@ -142,8 +160,8 @@
       integer( c_int ) :: i, jn, j0
       real( c_double ) :: rsum, rdn, rrdn
       !
-      integer( c_int ), dimension(:), pointer :: nevt, nneig
-      real( c_double ), dimension(:), pointer :: event_rate
+      !integer( c_int ), dimension(:), pointer :: nevt, nneig
+      !real( c_double ), dimension(:), pointer :: event_rate
       call link_int1_ptr( struc% ptr_nevt,       nevt,       struc% tot_sites )
       call link_int1_ptr( struc% ptr_nneig,     nneig,       struc% tot_sites )
       !call link_real2_ptr( struc% ptr_event_rate, event_rate, 10, struc% tot_sites )
@@ -184,13 +202,14 @@
       use derived_types
       use sub_new_types
       use errors
+      use variables
       implicit none
       type( KMC_type )               :: struc
       integer( c_int ), intent( in ) :: is,   &  ! Site selected
                                         jn       ! "ievent" of site "is" selected 
       integer( c_int )               :: jevt, j0
 
-      integer( c_int ), dimension(:), pointer :: init_state, final_state, site, event_site, nneig
+      !integer( c_int ), dimension(:), pointer :: init_state, final_state, site, event_site, nneig
       call link_int1_ptr( struc% ptr_site,             site,             struc% tot_sites )
       call link_int1_ptr( struc% event% ptr_i_state,   init_state,       struc% tot_sites )
       call link_int1_ptr( struc% event% ptr_f_state,   final_state,      struc% tot_sites )
@@ -213,13 +232,14 @@
       use iso_c_binding
       use derived_types
       use sub_new_types
+      use variables
       implicit none
       !
       type( KMC_type ), intent( inout ) :: obj
       integer( c_int )                  :: i
       !
-      integer( c_int ), dimension(:), pointer :: site
-      real( c_double ), dimension(:), pointer :: prop
+      !integer( c_int ), dimension(:), pointer :: site
+      !real( c_double ), dimension(:), pointer :: prop
       call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
       call link_real1_ptr( obj% ptr_prop, prop, obj% nprop )
       !

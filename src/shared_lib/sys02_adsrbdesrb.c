@@ -8,25 +8,27 @@
    ------------------------------- */
 struct event_type {
 
-  int nevent, nbond;
+  int nevent, nbond, nchem_react;
 
   int *ptr_i_state,
       *ptr_f_state;
 
   double *ptr_ebarrier,
          *ptr_de,
-         **ptr_ebond;
+         **ptr_ebond,
+         *ptr_spec;
 };
 
 struct kmc_type {
 
-  int bavard;
+  int bavard, conv;
   int period[3], nsites[3];
 
   char algorithm[50],
        input_file[50],
        input_event[50],
-       libname[50];
+       libname[50],
+       init_mod[50];
 
   int tot_sites,
       max_step,
@@ -45,7 +47,7 @@ struct kmc_type {
          per100,
          f0;
 
-  int     *ptr_site, *ptr_nneig, *ptr_nevt, *ptr_neig, *ptr_event_site;
+  int     *ptr_site, *ptr_nneig, *ptr_nevt, *ptr_neig, *ptr_event_site, *ptr_spec;
   double  *ptr_rate, *ptr_prop, *ptr_event_rate;
 
   struct event_type event;

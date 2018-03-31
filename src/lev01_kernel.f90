@@ -83,6 +83,8 @@ Program Kernel
      !
      nstep = nstep + 1
      call algorithm( sys )
+     !
+     if ( sys% conv == 1 ) exit 
      !stop " Kernel..."
      !
      if ( MODULO( nstep, sys% freq_write ) == 0 ) &

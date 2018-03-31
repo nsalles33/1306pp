@@ -8,10 +8,44 @@
 
       type( KMC_type ), intent( inout ) :: struc
 
+      if ( struc% sys_dim == 1 ) call cubic_1D( struc )
       if ( struc% sys_dim == 2 ) call cubic_2D( struc )  
       if ( struc% sys_dim == 3 ) call cubic_3D( struc )  
 
     end subroutine neig_list
+! =================================================================================================
+
+    subroutine cubic_1D( struc )
+      use iso_c_binding
+      use derived_types
+      use sub_new_types
+      use errors
+      implicit none
+      !
+      type( KMC_type ), intent( inout ) :: struc
+      integer( c_int ) :: i, id, nx
+      !
+      integer( c_int ), pointer :: nneig(:), neig(:)
+      call link_int1_ptr( struc% ptr_nneig, nneig, struc% tot_sites )
+      call link_int1_ptr( struc% ptr_neig, neig, nvois*struc% tot_sites ) 
+      !
+      nx = struc% nsites(1)
+      write(*,*) " Neig_list 1D...", nx, struc% tot_sites
+      !
+      do i = 0,struc% tot_sites - 1
+         id = i + 1
+         nneig( id ) = i*3 + 1
+         neig( nneig(id) ) = 2
+         !
+         if ( i /= 0 )     neig( nneig(id) + 1 ) = id - 1
+         if ( i /= nx - 1) neig( nneig(id) + 2 ) = id + 1
+         !
+         if (struc% period(1) /= 0.and.i == 0 )      neig( nneig(id) + 1 ) = id + (nx - 1)
+         if (struc% period(1) /= 0.and.i == nx - 1 ) neig( nneig(id) + 2 ) = id - (nx - 1)
+         !
+      enddo
+      !
+    end subroutine cubic_1D
 ! =================================================================================================
 
     subroutine cubic_2D( struc )
@@ -26,7 +60,6 @@
 
       integer( c_int ), pointer :: nneig(:), neig(:)
       call link_int1_ptr( struc% ptr_nneig, nneig, struc% tot_sites )
-      !call link_int2_ptr( struc% ptr_neig, neig, 10, struc% tot_sites ) 
       call link_int1_ptr( struc% ptr_neig, neig, nvois*struc% tot_sites ) 
       !
       nx = struc% nsites(1)
@@ -63,7 +96,7 @@
                print*, id, j, neig( j0 + j ),struc% tot_sites 
             endif
          enddo
-
+         !
          !if (i < nx.or. i > ny*(nx-1)+0) &
          if ( i < 2 ) &
            write (*,*) id,x,y,j0, " neig ", nneig(id),(neig( j0 + j ),j=0,4)

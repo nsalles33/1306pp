@@ -4,11 +4,14 @@
 #  For begining we declare 
 
 name_simulation "KMC test"
-system_dimension	3
+system_dimension	2
 #Nber_node_1dim		128
 nsite_x			128
 nsite_y			128
 nsite_z			1  
+init_config		"random"	0.01
+
+shared_library	"../../src_tmp/shared_lib/lib_sys03.so"
 
 node_prop 	2
 input_event "event.lib"

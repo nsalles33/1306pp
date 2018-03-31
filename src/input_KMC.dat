@@ -4,23 +4,26 @@
 #  For begining we declare 
 
 name_simulation "KMC test"
-system_dimension	2
+verbose			0
+system_dimension	1
 #Nber_node_1dim		128
-nsite_x			128
-nsite_y			128
-#nsite_z			1  
-init_config		0.05
+nsite_x			1  
+nsite_y			1  
+nsite_z			1  
+species			3
+init_config		species
 
-shared_library	"shared_lib/lib_sys02c.so"
+
+shared_library	"shared_lib/lib_sys03.so"
 
 node_prop 	2
 input_event "lib_event.dat"
-algorithm	"BKL"
+algorithm	Gillepsie
 temperature	300
-nstep		10000
-freq_write	1000
-calc_properties	1
-bound_condition	p p f
+nstep		20
+freq_write	1
+calc_properties	3
+bound_condition	f f f
 
 #
 

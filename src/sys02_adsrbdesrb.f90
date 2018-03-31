@@ -80,20 +80,12 @@
 ! .................................................................................................
 
     subroutine event_rate_calc( obj )
-      !use iso_c_binding
-      !use derived_types
-      !use sub_new_types
-      !use errors
       implicit none
 
       type( KMC_type ), intent( inout ) :: obj
 
       integer( c_int ) :: i, id, ievt, jevt, j0
       real( c_double ) :: kt, f0
-
-      !integer( c_int ), dimension(:), pointer :: site, nneig, init_state, final_state, &
-      !                                           nevt, neig, event_site
-      !real( c_double ), dimension(:), pointer :: de, rate, ebarrier, event_rate
 
       call link_int1_ptr( obj% ptr_site,            site,        obj% tot_sites )
       call link_int1_ptr( obj% ptr_nneig,           nneig,       obj% tot_sites )
@@ -103,10 +95,6 @@
       call link_real1_ptr( obj% event% ptr_ebarrier, ebarrier,    obj% event% nevent )
       call link_real1_ptr( obj% event% ptr_de,      de,          obj% event% nevent )
       call link_real1_ptr( obj% ptr_rate,           rate,        obj% tot_sites )
-
-      !call link_int2_ptr( obj% ptr_neig,           neig,        10, obj% tot_sites )
-      !call link_int2_ptr( obj% ptr_event_site,     event_site,  10, obj% tot_sites )
-      !call link_real2_ptr( obj% ptr_event_rate,    event_rate,  10, obj% tot_sites )
       call link_int1_ptr( obj% ptr_neig,           neig,        nvois*obj% tot_sites )
       call link_int1_ptr( obj% ptr_event_site,     event_site,  nvois*obj% tot_sites )
       call link_real1_ptr( obj% ptr_event_rate,    event_rate,  nvois*obj% tot_sites )

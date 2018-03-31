@@ -1,9 +1,19 @@
 
-!  module diff_vac
-!    use derived_types
-!    implicit none
+  module variables
+    use iso_c_binding
+    implicit none
+    !
+    integer( c_int ), dimension(:), pointer :: site, nneig, neig, nevt, spec, event_site
+    !
+    real( c_double ), dimension(:), pointer :: rate, prop, event_rate
+    !
+    ! ::: EVENT
+    integer( c_int ), dimension(:), pointer :: init_state, final_state
+    real( c_double ), dimension(:), pointer :: ebarrier, de
+    real( c_double ), dimension(:,:), pointer :: ebond
+    !
+  end module variables
 
-!   contains
 !
 !  USER routine:
 !  - subroutine read_event( obj ) 
@@ -17,10 +27,11 @@
       use derived_types
       use sub_new_types
       use errors
+      use variables
       implicit none
 
       type( KMC_type ), intent( inout ) :: struc
-      character (len=50,kind=c_char)    :: string
+      character (len=500,kind=c_char)    :: string
       integer( c_int )                  :: u0, i, id, ibd, jbd, ios, nevent, nbond
       logical                           :: EOF
 
@@ -28,9 +39,9 @@
       CHARACTER (len=100,kind=c_char), dimension (50) :: args
       integer( c_int ) :: nargs
 
-      integer( c_int ), dimension(:), pointer :: init_state, final_state
-      real( c_double ), dimension(:), pointer :: ebarrier, de
-      real( c_double ), dimension(:,:), pointer :: ebond
+      !integer( c_int ), dimension(:), pointer :: init_state, final_state
+      !real( c_double ), dimension(:), pointer :: ebarrier, de
+      !real( c_double ), dimension(:,:), pointer :: ebond
 
 !  ::: Lecture of state and rate of each node
       print*, " INPUT_EVENT: ",trim(struc% input_event)
@@ -96,6 +107,7 @@
       use derived_types
       use sub_new_types
       use errors
+      use variables
       implicit none
 
       type( KMC_type ), intent( inout ) :: struc
@@ -104,10 +116,10 @@
 
       integer, dimension( struc% tot_sites ) :: bd, ddb, v
 
-      integer( c_int ), dimension(:), pointer :: site, nneig, neig
+      !integer( c_int ), dimension(:), pointer :: site, nneig, neig
       !integer( c_int ), dimension(:,:), pointer :: neig
-      real( c_double ), dimension(:), pointer :: de, rate, event_rate, ebarrier
-      real( c_double ), dimension(:,:), pointer :: ebond
+      !real( c_double ), dimension(:), pointer :: de, rate, event_rate, ebarrier
+      !real( c_double ), dimension(:,:), pointer :: ebond
       call link_int1_ptr( struc% ptr_site, site, struc% tot_sites )
       call link_int1_ptr( struc% ptr_nneig, nneig, struc% tot_sites )
       call link_int1_ptr( struc% ptr_neig, neig, nvois*struc% tot_sites )
@@ -198,6 +210,7 @@
       use derived_types
       use sub_new_types
       use random
+      use variables
       implicit none
 
       type( KMC_type ), intent( inout ) :: struc
@@ -206,8 +219,8 @@
       integer( c_int ) :: i, j0, jn
       real( c_double ) :: rsum, rdn, rrdn
 
-      integer( c_int ), dimension(:), pointer :: nneig, neig
-      real( c_double ), dimension(:), pointer :: event_rate
+      !integer( c_int ), dimension(:), pointer :: nneig, neig
+      !real( c_double ), dimension(:), pointer :: event_rate
       call link_int1_ptr( struc% ptr_nneig, nneig, struc% tot_sites )
       call link_int1_ptr( struc% ptr_neig, neig, nvois*struc% tot_sites )
       call link_real1_ptr( struc% ptr_event_rate, event_rate, nvois*struc% tot_sites )
@@ -247,13 +260,14 @@
       use iso_c_binding
       use derived_types
       use sub_new_types
+      use variables
       implicit none
       type( KMC_type ) :: struc
       integer( c_int ), intent( in ) :: is, jn
       integer( c_int ) :: j, j0
       !
-      integer( c_int ), dimension(:), pointer :: site, nneig, neig
-      real( c_double ), dimension(:), pointer :: rate, event_rate 
+      !integer( c_int ), dimension(:), pointer :: site, nneig, neig
+      !real( c_double ), dimension(:), pointer :: rate, event_rate 
       !
       call link_int1_ptr( struc% ptr_site, site, struc% tot_sites )
       call link_int1_ptr( struc% ptr_nneig, nneig, struc% tot_sites )
@@ -281,6 +295,7 @@
       use iso_c_binding
       use derived_types
       use sub_new_types
+      use variables
       implicit none
       !
       type( KMC_type ) :: obj
@@ -289,8 +304,8 @@
       integer( c_int ), dimension( obj% tot_sites ) :: gp, histo
       integer( c_int ), dimension( -1:int(obj% tot_sites/2) ) :: clster
       !
-      integer( c_int ), dimension(:), pointer :: site, nneig, neig
-      real( c_double ), dimension(:), pointer :: prop
+      !integer( c_int ), dimension(:), pointer :: site, nneig, neig
+      !real( c_double ), dimension(:), pointer :: prop
       call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
       call link_int1_ptr( obj% ptr_nneig, nneig, obj% tot_sites )
       call link_int1_ptr( obj% ptr_neig, neig, nvois*obj% tot_sites )

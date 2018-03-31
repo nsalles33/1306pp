@@ -15,7 +15,7 @@
     !
     !
     temp1 = trim(struc% algorithm)
-    if ( trim(struc% algorithm) == 'BKL' ) call algo_bkl( struc )
+    !if ( trim(struc% algorithm) == 'BKL' ) call algo_bkl( struc )
     if ( temp1 == 'BKL' ) call algo_bkl( struc )
     !
     temp2 = trim(struc% algorithm)
@@ -39,6 +39,8 @@
 
     call choose_event_hub( struc, isite, ievent )
 
+    if ( struc% conv == 1 ) return
+
     call event_applied_hub( struc, isite, ievent )
 
     call Time_increment( struc )
@@ -52,14 +54,26 @@
       use derived_types
       implicit none
       type( KMC_type ), intent( inout ) :: struc
+      !character (len = 3, kind=c_char)  :: tmp1
+      !character (len = 9, kind=c_char)  :: tmp2
       real( c_double )                  :: rdn
-
-!      print*, " - To do :: Time_increment "
-
-      call random_number( rdn )
-      struc% rand_time = - log( rdn )/struc% sum_rate
-      struc% time = struc% time + struc% rand_time
-
+      !
+      !tmp1 = struc% algorithm
+      !tmp2 = struc% algorithm
+      !print*, " - To do :: Time_increment ", struc% algorithm, tmp1,tmp2
+      !
+      !if ( trim(struc% algorithm) == "BKL" ) then
+         call random_number( rdn )
+         struc% rand_time = - log( rdn )/struc% sum_rate
+         struc% time = struc% time + struc% rand_time
+      !else if ( trim(struc% algorithm) == "Gillepsie" ) then
+      !else if ( tmp2 == "Gillepsie" ) then
+      !   print*, " time_increment",struc% rand_time
+      !   struc% time = struc% time + struc% rand_time
+      !endif
+      !
+      !stop " Time_increment..."
+      !
     end subroutine
 ! =================================================================================================
 
@@ -67,15 +81,20 @@
     use derived_types
     use lib_hub
     implicit none
-
+    !
     type( KMC_type ) :: struc
     integer :: ievent, isite
-
+    !
+    call rate_sum_calc( struc )
+    !
     call choose_event_hub( struc, isite, ievent )
-
+    !
+    if ( struc% conv == 1 ) return
+    !
     call event_applied_hub( struc, isite, ievent )
-
-    call Time_increment( struc )
-
+    !
+    !call Time_increment( struc )
+    struc% time = struc% time + struc% rand_time
+    !
   end subroutine algo_gillepsie
 ! =================================================================================================

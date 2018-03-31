@@ -93,7 +93,7 @@ contains
     implicit none
 
     type( KMC_type ), intent( inout ) :: obj
-    integer( c_int ) :: len,i
+    !integer( c_int ) :: len,i
     
     !len = 0
     !do 

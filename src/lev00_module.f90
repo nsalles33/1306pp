@@ -85,6 +85,7 @@
       type( KMC_type ) :: this
 
       this% bavard = 0
+      this% conv = 0
       this% period(:) = 0
 
       this% algorithm = "BKL"
@@ -99,6 +100,7 @@
       this% max_step = 1
       this% sum_rate = 0.0
       this% rand_rate = 0.0
+      this% nspec = 0
 
       this% temp = 300.0
       this% kt = 1.0
@@ -120,34 +122,32 @@
 
       integer( c_int ) :: n
       real( c_double ) :: mem
-      print*, " Enter in KMC_type constructor..."
+      print*, " Enter in KMC_type allocation..."
 
       this% kt = 1.0 ;! kb*this% temp
       this% f0 = 1.0 ;! 1e-12
-
-!  ::: System Size
-!      print*, 'System Size...'
+      !
+      !  ::: System Size
+      !print*, 'System Size...'
       if ( this% sys_dim > 3 .or. this% sys_dim == 0 ) &
          call error( " BAD SYSTEM DIMENSION " )
-
+      !
       if ( this% nsites(1) == 0 ) &
          call error( " Lx is not declared " )
-
+      !
       if ( this% sys_dim == 2.and.this% nsites(2) == 0.and.this% nsites(1) /= 0 ) then
          this% nsites(2) = this% nsites(1)
          call warning( " System 2D square Lx = Ly " )
       endif
-
+      !
       if ( this% sys_dim == 3.and.this% nsites(2) == 0.and.this% nsites(3) == 0 )  &
         call error( " System 3D => Ly and Lz must be declared " )
-
+      !
       this% tot_sites = this% nsites(1)*this% nsites(2)*this% nsites(3)
       n = this% tot_sites
-
-!  ::: Table allocation 
-!      print*, 'Table allocation...'
-!      allocate( h_site(n), h_rate(n), h_nneig(n), h_neig(10,n), h_event_rate(10,n),  &
-!                h_nevt(n), h_event_site(10,n) )
+      !
+      !  ::: Table allocation 
+      !print*, 'Table allocation...'
       allocate( h_site(n), h_rate(n), h_nneig(n), h_neig(nvois*n), h_event_rate(nvois*n),  &
                 h_nevt(n), h_event_site(nvois*n) )
       if ( .not.allocated(h_site)  .or. .not.allocated(h_rate) .or.       &
@@ -155,29 +155,33 @@
            .not.allocated(h_event_rate).or. .not.allocated(h_nevt) .or.   &
            .not.allocated(h_event_site) )   &
          call error( " KMC_type => CONSTRUCTOR problem..." )
+      !
+      if ( this% nspec /= 0 ) then
+          allocate( h_spec( this% nspec ) )
+          if ( .not.allocated( h_spec ) ) call error( " KMC_type => CONSTRUCTOR h_spec problem..." )
+      endif
+      !
       mem = ( n + nvois*n )*sizeof(mem) + ( 3*n + nvois*n*2 )*sizeof(n)
       print*, " MEMORY ALLOCATED :: ",mem,"Bytes"
-!
-!  ::: Connection between ptr_table -> h_table
+      !
+      !  ::: Connection between ptr_table -> h_table
       this% ptr_site       = c_loc( h_site(1) )
       this% ptr_rate       = c_loc( h_rate(1) )
-      !this% ptr_neig       = c_loc( h_neig(1,1) )
       this% ptr_neig       = c_loc( h_neig(1) )
       this% ptr_nneig      = c_loc( h_nneig(1) )
-      !this% ptr_event_rate = c_loc( h_event_rate(1,1) )
       this% ptr_event_rate = c_loc( h_event_rate(1) )
       this% ptr_nevt       = c_loc( h_nevt(1) )
-      !this% ptr_event_site = c_loc( h_event_site(1,1) )
       this% ptr_event_site = c_loc( h_event_site(1) )
-!
-!  ::: Properties table
-!      print*, 'Prop Table allocation...'
+      if ( allocated( h_spec ) ) this% ptr_spec = c_loc( h_spec(1) )
+      !
+      !  ::: Properties table
+      !print*, 'Prop Table allocation...'
       if ( this% nprop /= 0 ) allocate( h_prop( this% nprop ) ) !, this% txtprop(this% nprop) )
-!
+      !
       this% ptr_prop = c_loc( h_prop(1) )
-!
+      !
       print*, " KMC_type Constructor DONE"
-
+      !
     end subroutine builder_kmc_type
 ! ............................................................................
 !
@@ -224,13 +228,15 @@
     end subroutine Init_table
 ! ............................................................................
 !
-    subroutine builder_event_type( this, n ) bind( C )
+    subroutine builder_event_type( this, nevt ) bind( C )
       implicit none
       type( event_type )   :: this
-      integer( c_int ), intent( in ) :: n
+      integer( c_int ), intent( in ) :: nevt
+      integer( c_int ) :: n
 
       print*, " Enter in EVENT_type constructor..."
-      this% nevent = n
+      this% nevent = nevt
+      n = this% nevent 
 
       allocate( h_i_state(n), h_f_state(n), h_Ebarrier(n), h_dE(n), h_ebond(this% nbond, this% nbond) )
       if ( .not.allocated(h_i_state) .or. .not.allocated(h_f_state) .or.   &
@@ -281,6 +287,7 @@
          write (*,*) " Nber of Node : ", this% nsites(i)
       enddo
       write (*,*) " System Size (nodes) : ", this% tot_sites
+      write (*,*) " Number of Species   : ", this% nspec
       write (*,*) " Freq Write          : ", this% freq_write
       write (*,*) " Bound Condition     : ", ( this% period( i ), i=1,3 )
       write (*,*) " ================================== "
@@ -322,43 +329,44 @@
       implicit none
       type( KMC_type ) :: this
       integer( c_int ), intent ( in ) :: step, u0
-      integer( c_int ) :: ios, i, x, y, z, nx, ny, nxy
-
+      integer( c_int ) :: ios, i, x, y, z, nx, ny, nxy, f
+      !
       integer( c_int ), dimension(:), pointer :: site
       real( c_double ), dimension(:), pointer :: prop
       call link_int1_ptr( this% ptr_site, site, this% tot_sites )
       call link_real1_ptr( this% ptr_prop, prop, this% nprop )
-
+      !
       if ( MODULO( step, this% freq_write ) /= 0 ) return
-     ! write (*,*) " ...PRINT_STATE... "
-
+      !write (*,*) " ...PRINT_STATE... "
+      !
       nx = this% nsites(1)
       ny = this% nsites(2)
       nxy = nx*ny
-
-!  ::: Write Configuration
-!    -- 3D cubic
+      !
+      !  ::: Write Configuration
+      !    -- 3D cubic
       write (u0,fmt='(1x,I6)',iostat=ios) this% tot_sites
         if (ios /=0) write (*,*) " Problem write => state_file.xyz  "
-
+      !
       write (u0,*,iostat=ios) step, this% sys_dim,"DIM", (this% nsites(i),i=1,this% sys_dim)
         if (ios /=0) write (*,*) " Problem write => state_file.xyz  "
-
+      !
       do i = 0,this%tot_sites - 1
          x = MODULO( i, nx )
          y = MODULO( i/nx, ny )
          z = i / nxy
          write (u0,'(1x,I2,3(2x,I4))') site(i+1), x, y, z
       enddo
-
-!  ::: Write Energetic Statistic
+      !
+      !  ::: Write Energetic Statistic
       if ( step == 0 )  then
         write (*,*) "    Step   |    Time   |   rand_rate    |    rand_time    " !,( " | ",trim(this% txtprop(i)),i=1,this%nprop )
         write (*,*) " ----------------------------------------------------------------- "
       endif
-      write (*,'(1x,i6,4(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, (prop(i), i=1, this% nprop)
-      write (100,'(1x,i6,4(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, (prop(i), i=1, this% nprop)
-
+      f = this% nprop
+      write (*,'(1x,i6,*(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, (prop(i), i=1, this% nprop)
+      write (100,'(1x,i6,*(2x,E10.4))') step, this% time, this% rand_rate, this% rand_time, (prop(i), i=1, this% nprop)
+      !
     end subroutine print_state
 ! ............................................................................
   
