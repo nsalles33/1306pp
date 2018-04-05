@@ -13,14 +13,15 @@ init_config		random	0.01
 
 shared_library	"../../src_tmp/shared_lib/lib_sys02.so"
 
-node_prop 	2
-input_event "event.lib"
+node_prop 	3
+input_event "lib_event.dat"
 algorithm	"BKL"
-temperature	300
-nstep		200000
-freq_write	1000
-calc_properties	1
-bound_condition	p p f
+partial_pressure        2
+temperature		300
+nstep			200000
+freq_write		1000
+calc_properties		1
+bound_condition		p p f
 
 #
 

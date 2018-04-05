@@ -97,6 +97,10 @@ Program Kernel
   call cpu_time( t_stop )
   !call system_clock( t_stop )
   !
+  if ( sys% conv == 1 ) &
+     write (*,*) " Finit with Convergence criturium "
+  if ( nstep == sys% max_step ) &
+     write (*,*) " Finit with max_step criturium "
   write (*,'(a,1x,f15.6,1x,a)') " TIME elapse :", t_stop - t_start, " second "
   !
   close( u0 )

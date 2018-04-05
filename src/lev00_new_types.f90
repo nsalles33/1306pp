@@ -13,11 +13,14 @@
                                                            h_event_site, &
                                                            h_spec
     !
-    real( c_double ), dimension(:), target, allocatable :: h_rate,    &
-                                                           h_prop,    &
-                                                           h_ebarrier,&
-                                                           h_de,      &
-                                                           h_event_rate
+    real( c_double ), dimension(:), target, allocatable :: h_rate,       &
+                                                           h_prop,       &
+                                                           h_f0,         &
+                                                           h_ebarrier,   &
+                                                           h_de,         &
+                                                           h_event_rate, &
+                                                           h_ppressure,  &
+                                                           h_masse
     !
     real( c_double ), dimension(:,:), target, allocatable :: h_ebond  
     !
@@ -31,9 +34,13 @@
     implicit none
 
     !private 
-    !real, parameter :: kb = 1.38065e-12 ! J/K
     integer( c_int ), parameter :: nvois = 10
-    real( c_double ), parameter :: kb = 8.61733e-7  ! eV/K
+    !real( c_double ), parameter :: kb = 1.38065e-23 ! J/K
+    real( c_double ), parameter :: kb = 8.61733e-5     ! eV/K
+    real( c_double ), parameter :: na = 6.02214e23     ! atomes 
+    real( c_double ), parameter :: pi = 4.0*atan(1.0)  ! 3.14...
+    real( c_double ), parameter :: u = 1.66e-27        ! kg
+    real( c_double ), parameter :: ang = 1e-10         ! m 
     !public :: print_state
 
 ! '''''''''''''''''''''''''''' NEW TYPE '''''''''''''''''''''''''''''''''''''''
@@ -44,6 +51,7 @@
       !
       type( c_ptr )    :: ptr_i_state,  &
                           ptr_f_state,  &
+                          ptr_f0,       &
                           ptr_ebarrier, &
                           ptr_de,       &
                           ptr_ebond
@@ -69,7 +77,8 @@
                                                         freq_write,  &
                                                         nprop,       &
                                                         node_state,  &
-                                                        nspec
+                                                        nspec,       &
+                                                        npressure
       !
       real( c_double )                                :: sum_rate,    &
                                                          rand_rate,   &
@@ -77,10 +86,12 @@
                                                          rand_time,   &
                                                          max_time,    &
                                                          temp, kt,    &
-                                                         per100, f0
+                                                         per100, f0,  &
+                                                         scale
       !
-      type( c_ptr )  ::  ptr_site, ptr_nneig, ptr_nevt, ptr_neig, ptr_event_site, &
-                         ptr_spec, ptr_rate, ptr_prop, ptr_event_rate
+      type( c_ptr )  ::  ptr_site, ptr_nneig, ptr_nevt, ptr_neig, ptr_event_site,    &
+                         ptr_spec, ptr_rate, ptr_prop, ptr_event_rate, ptr_pressure, &
+                         ptr_masse
       !
       type( event_type )                   :: event
       !

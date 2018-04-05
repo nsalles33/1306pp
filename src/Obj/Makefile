@@ -6,7 +6,7 @@ EXE=../KMC.x
 F90=gfortran-mp-7
 
 FFLAGS= -Wall -O -fdefault-real-8 $(FDEBUG) $(LSHARED)
-FDEBUG= -g -fbounds-check
+FDEBUG= -g -fbounds-check -fcheck=all
 LSHARED= -cpp -ldl -DSHARED_LIB 
 
 all: $(EXE)

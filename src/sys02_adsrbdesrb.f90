@@ -34,28 +34,26 @@
       character (len=1, kind=c_char)  :: delims = " "
       CHARACTER (len=100, kind=c_char), dimension (50) :: args
       integer( c_int ) :: nargs
-
-      !integer( c_int ), dimension(:), pointer :: init_state, final_state
-      !real( c_double ), dimension(:), pointer :: ebarrier, de
-
+      !
       !  ::: Lecture of state and rate of each node
+      !
       print*, " INPUT_EVENT: ",trim(obj% input_event)
       open( newunit=u0, file=trim(obj% input_event), iostat=ios )
       if ( ios /= 0 ) call error( "input_event does't open!!" )
-
+      !
       EOF = .false.
       do while ( .not.EOF )
-
+         !
          call read_line( u0, string, EOF )
          call parse( trim(string), delims, args, nargs )
          write (*,*) "Lu :", nargs, (i,trim(args(i)), i=1,nargs)
-
+         !
          if ( args(1) == "Number_of_event" ) then
             read( args(2), '(i5)' ) nevent
             call builder_event_type( obj% event, 2*nevent )
             exit
          endif
-
+         !
       enddo
       !
       call link_int1_ptr( obj% event% ptr_i_state, init_state, obj% event% nevent)
@@ -138,10 +136,10 @@
 ! .................................................................................................
 
     subroutine choose_event( struc, isite, ievent ) bind( C )
-      use iso_c_binding
-      use derived_types
-      use sub_new_types
-      use random
+      !use iso_c_binding
+      !use derived_types
+      !use sub_new_types
+      !use random
       implicit none
       type( KMC_type ), intent( inout ) :: struc
       integer( c_int ), intent( inout ) :: isite, ievent
@@ -149,11 +147,8 @@
       integer( c_int ) :: i, jn, j0
       real( c_double ) :: rsum, rdn, rrdn
       !
-      integer( c_int ), dimension(:), pointer :: nevt, nneig
-      real( c_double ), dimension(:), pointer :: event_rate
       call link_int1_ptr( struc% ptr_nevt,       nevt,       struc% tot_sites )
       call link_int1_ptr( struc% ptr_nneig,     nneig,       struc% tot_sites )
-      !call link_real2_ptr( struc% ptr_event_rate, event_rate, 10, struc% tot_sites )
       call link_real1_ptr( struc% ptr_event_rate, event_rate, nvois*struc% tot_sites )
       !
       !print*, " - To do :: choose_event "
@@ -197,7 +192,7 @@
                                         jn       ! "ievent" of site "is" selected 
       integer( c_int )               :: jevt, j0
 
-      integer( c_int ), dimension(:), pointer :: init_state, final_state, site, event_site, nneig
+      !integer( c_int ), dimension(:), pointer :: init_state, final_state, site, event_site, nneig
       call link_int1_ptr( struc% ptr_site,             site,             struc% tot_sites )
       call link_int1_ptr( struc% event% ptr_i_state,   init_state,       struc% tot_sites )
       call link_int1_ptr( struc% event% ptr_f_state,   final_state,      struc% tot_sites )
@@ -225,8 +220,8 @@
       type( KMC_type ), intent( inout ) :: obj
       integer( c_int )                  :: i
       !
-      integer( c_int ), dimension(:), pointer :: site
-      real( c_double ), dimension(:), pointer :: prop
+      !integer( c_int ), dimension(:), pointer :: site
+      !real( c_double ), dimension(:), pointer :: prop
       call link_int1_ptr( obj% ptr_site, site, obj% tot_sites )
       call link_real1_ptr( obj% ptr_prop, prop, obj% nprop )
       !

@@ -89,46 +89,6 @@
       !
       !write (*,*) nargs,'out ',(trim(args(i)),i=1,nargs)
       end subroutine parse
-! .............................................................................
- !
- !  subroutine link_int1_ptr( ptr_c, ptr_f, n ) bind( C )
- !    use iso_c_binding
- !    implicit none
- !    type( c_ptr ) :: ptr_c
- !    integer( c_int ), intent( in ) :: n
- !    integer( c_int ), dimension(:), pointer :: ptr_f
- !    call c_f_pointer( ptr_c, ptr_f, shape=[ n ] )
- !  end subroutine link_int1_ptr
-!!............................................................................
-
- !  subroutine link_int2_ptr( ptr_c, ptr_f, n, m ) bind( C )
- !    use iso_c_binding
- !    implicit none
- !    type( c_ptr ) :: ptr_c
- !    integer( c_int ), intent( in ) :: n, m
- !    integer( c_int ), dimension(:,:), pointer :: ptr_f
- !    call c_f_pointer( ptr_c, ptr_f, shape=[n,m] )
- !  end subroutine link_int2_ptr
-!!............................................................................
-
- !  subroutine link_real1_ptr( ptr_c, ptr_f, n ) bind( C )
- !    use iso_c_binding
- !    implicit none
- !    type( c_ptr ) :: ptr_c
- !    integer( c_int ), intent( in ) :: n
- !    real( c_double ), dimension(:), pointer :: ptr_f
- !    call c_f_pointer( ptr_c, ptr_f, shape=[ n ] )
- !  end subroutine link_real1_ptr
-!!............................................................................
-
- !  subroutine link_real2_ptr( ptr_c, ptr_f, n, m ) bind( C )
- !    use iso_c_binding
- !    implicit none
- !    type( c_ptr ) :: ptr_c
- !    integer( c_int ), intent( in ) :: n,m
- !    real( c_double ), dimension(:,:), pointer :: ptr_f
- !    call c_f_pointer( ptr_c, ptr_f, shape=[ n,m ] )
- !  end subroutine link_real2_ptr
 ! ............................................................................
 
 

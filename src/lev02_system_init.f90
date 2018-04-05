@@ -91,8 +91,9 @@
          !
          call read_line( u0, string, EOF )
          call parse( trim(string), delims, args, nargs )
-         !print*, "Lu:", args(1)
+         !print*, "Lu: ", trim(args(1))," ", trim(args(2))
          !
+         if ( args(1) == "verbose" )          read ( args(2), '(i1)' ) struc% bavard
          if ( args(1) == "system_dimension" ) read ( args(2), '(i5)' ) struc% sys_dim
          if ( args(1) == "Nber_node_1dim".or.  &
               args(1) == "nsite_x" )          read ( args(2), '(i5)' ) struc% nsites(1)
@@ -121,6 +122,9 @@
             struc% algorithm = trim(struc% algorithm)//c_null_char
          endif
          !
+         if ( args(1) == "scale_parameter" )  read ( args(2), '(f6.6)' ) struc% scale
+         !
+         if ( args(1) == "partial_pressure" ) read ( args(2), '(i5)' ) struc% npressure
          if ( args(1) == "temperature" )      read ( args(2), '(f6.6)' ) struc% temp
          if ( args(1) == "nstep" )            read ( args(2), '(I6)' ) struc% max_step
          if ( args(1) == "freq_write" )       read ( args(2), '(I6)' ) struc% freq_write
@@ -143,7 +147,7 @@
          endif
          !
       enddo
-      write (*,*) " LECTURE ",struc% sys_dim, struc% nsites(1), node_state, struc% input_event
+      write (*,*) " LECTURE ",struc% sys_dim, struc% nsites(1), node_state, struc% input_event, struc% npressure, struc% temp
       close( u0 )
       !
       !if ( sys_dim == 2 )   &
@@ -163,15 +167,18 @@
      use derived_types
      use sub_new_types
      use random
+     use errors
      implicit none 
+     !
      type( KMC_type ), intent( inout ) :: struc
-     integer                           :: i
-     real                              :: rnd
+     integer( c_int )                  :: i
+     real( c_double )                  :: rnd
      !
      integer( c_int ), dimension(:), pointer :: site
      call link_int1_ptr( struc% ptr_site, site, struc% tot_sites )
      !
-     print*, "Distribution_state mode :", struc% init_mod, struc% per100
+     print*, "Distribution_state mode : ", struc% init_mod, struc% per100
+     !
      !
      if ( trim(struc% init_mod) == "random" ) then
         !
@@ -197,8 +204,17 @@
            print*, " site: ", i, " activity :", site( i )
         enddo
         !
-      endif
-      !
+     else if ( trim(struc% init_mod) == "none" ) then
+        !
+        do i = 1, struc% tot_sites
+           site( i ) = 0
+           !print*, " site: ", i, " activity :", site( i )
+        enddo
+        !
+     endif
+     !
+     !stop " Distrib...ifin"
+     !
    end subroutine distribution_state
 ! =================================================================================================
 
