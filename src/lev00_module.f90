@@ -156,8 +156,14 @@
       !
       !  ::: Table allocation 
       !
-      allocate( h_site(n), h_rate(n), h_nneig(n), h_neig(nvois*n), h_event_rate(nvois*n),  &
-                h_nevt(n), h_event_site(nvois*n) )
+      allocate( h_site(n),              &
+                h_rate(n),              &
+                h_nneig(n),             &
+                h_neig(nvois*n),        &
+                h_event_rate(nvois*n),  &
+                h_nevt(n),              &
+                h_event_site(nvois*n) )
+      !
       if ( .not.allocated(h_site)  .or. .not.allocated(h_rate) .or.       &
            .not.allocated(h_nneig) .or. .not.allocated(h_neig) .or.       &
            .not.allocated(h_event_rate).or. .not.allocated(h_nevt) .or.   &
@@ -228,6 +234,9 @@
            allocated(h_event_site).or.allocated(h_ebond) )  &
          print*, " KMC_type => DESTRUCTOR problem ..."
 
+      if ( allocated(h_ppressure) ) deallocate( h_ppressure )
+      if ( allocated(h_masse) )    deallocate( h_masse )
+
     end subroutine destructor_kmc_type
 ! ............................................................................
 
@@ -293,7 +302,7 @@
       if ( allocated(h_de) ) deallocate( h_de )
       if ( allocated(h_ebond) ) deallocate( h_ebond )
       if ( allocated(h_f0) ) deallocate( h_f0 )
-
+      !
       if ( allocated(h_i_state).or.allocated(h_f_state).or.  &
            allocated(h_ebarrier).or.allocated(h_de) )        &
          call error( "EVENT_type => DESTRUCTOR problem " )
@@ -305,8 +314,8 @@
       implicit none
       type( KMC_type ) :: this
       integer( c_int ) :: i
-
-!      print*, " - To do :: print_kmc_type "
+      !
+      !print*, " - To do :: print_kmc_type "
       write (*,*) " ======== SYSTEM PARAMETERS ======= "
       write (*,*) " Algorithm         : ", this% algorithm
       write (*,*) " MAX KMC steps     : ", this% max_step
@@ -329,30 +338,32 @@
    subroutine print_event( this )  bind( C )
       implicit none
       type( event_type ) :: this
-      integer( c_int ) :: i, id, nevt2
+      integer( c_int ) :: i, id!, nevt2
 
       integer( c_int ), dimension(:), pointer :: init_state, final_state
-      real( c_double ), dimension(:), pointer :: ebarrier, de
-      call link_int1_ptr( this% ptr_i_state, init_state, this% nevent)
-      call link_int1_ptr( this% ptr_f_state, final_state, this% nevent)
-      call link_real1_ptr( this% ptr_ebarrier, ebarrier, this% nevent)
-      call link_real1_ptr( this% ptr_de, de, this% nevent)
-
-      nevt2 = this% nevent/2
-      if ( nevt2 == 0 ) nevt2 = this% nevent
-
-      write (*,*) " =========== EVENT LIB ========= ", nevt2
-      do i = 1,nevt2
+      real( c_double ), dimension(:), pointer :: ebarrier, de, f0
+      call link_int1_ptr( this% ptr_i_state,   init_state,  this% nevent)
+      call link_int1_ptr( this% ptr_f_state,   final_state, this% nevent)
+      call link_real1_ptr( this% ptr_f0,       f0,          this% nevent)
+      call link_real1_ptr( this% ptr_ebarrier, ebarrier,    this% nevent)
+      call link_real1_ptr( this% ptr_de,       de,          this% nevent)
+      !
+      !nevt2 = this% nevent/2
+      !if ( nevt2 == 0 ) nevt2 = this% nevent
+      !
+      write (*,*) " =========== EVENT LIB ========= ", this% nevent
+      do i = 1,this% nevent
          id = i
          write (*,*) " Evt:",id,init_state( id ), final_state( id ), &
-                                ebarrier( id ), de( id )
-         if ( this% nevent > 1 ) then
-            id = i + nevt2
-            write (*,*) " Inv:",id,init_state( id ), final_state( id ), &
-                                ebarrier( id ), de( id )
-         endif
+                                f0( id ),ebarrier( id )!, de( id )
+      if ( id == 2 ) stop "print_event"
+         !if ( this% nevent > 1 ) then
+         !   id = i + nevt2
+         !   write (*,*) " Inv:",id,init_state( id ), final_state( id ), &
+         !                       ebarrier( id ), de( id )
+         !endif
       enddo
-
+      !
     end subroutine print_event
 ! ............................................................................
 !

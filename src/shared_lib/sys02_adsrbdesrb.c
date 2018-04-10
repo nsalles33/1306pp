@@ -77,7 +77,7 @@ extern double *__hidden_table_MOD_h_ebarrier, *__hidden_table_MOD_h_de, **__hidd
 /* ------- FUNCTION DECLARATION...
    ------------------------------- */
 
-void builder_event_type( struct event_type *, int * );
+void builder_event_type( struct event_type *, int );
 
 
 /* ------- FUNCTION DEFINITION... 
@@ -115,7 +115,7 @@ int read_line( FILE *fp, struct event_type *event ) {
      if ( !strcmp(word[0],"Number_of_event") ) {
         nevent = 2*atoi( word[1] );
         printf( " nevent %d\n ",nevent/2 );
-        builder_event_type( event, &nevent );
+        builder_event_type( event, nevent );
         //break;
         return nevent;
      }
@@ -139,18 +139,18 @@ double random_number( double min, double max ) {
 // .................................................................................
 // ......................................................................
 
-void builder_event_type( struct event_type *event, int *nevent ) {
+void builder_event_type( struct event_type *event, int nevent ) {
   int int_size = sizeof( int );
   int double_size = sizeof( double );
 
-  printf( " Enter in EVENT_type constructor...\n" );
-  event->nevent = *nevent;
+  printf( " Enter in EVENT_type constructor... %d\n", nevent );
+  event->nevent = nevent;
 
-  __hidden_table_MOD_h_i_state  = malloc( *nevent*int_size );
-  __hidden_table_MOD_h_f_state  = malloc( *nevent*int_size );
-  __hidden_table_MOD_h_f0       = malloc( *nevent*double_size );
-  __hidden_table_MOD_h_ebarrier = malloc( *nevent*double_size );
-  __hidden_table_MOD_h_de       = malloc( *nevent*double_size );
+  __hidden_table_MOD_h_i_state  = malloc( nevent*int_size );
+  __hidden_table_MOD_h_f_state  = malloc( nevent*int_size );
+  __hidden_table_MOD_h_f0       = malloc( nevent*double_size );
+  __hidden_table_MOD_h_ebarrier = malloc( nevent*double_size );
+  __hidden_table_MOD_h_de       = malloc( nevent*double_size );
 
   if ( event->nbond != 0 ) {
      __hidden_table_MOD_h_ebond = malloc( event->nbond*sizeof( double* ) );
@@ -218,7 +218,7 @@ void read_event( struct kmc_type *struc ) {
      if ( !strcmp(word[0],"Number_of_event") ) {
         nevent = atoi( word[1] );
         printf( " nevent %d\n ",nevent );
-        builder_event_type( &struc->event, &nevent );
+        builder_event_type( &struc->event, nevent );
         //break;
 
         for ( id = 0; id < struc->event.nevent; id ++ ) {
@@ -305,19 +305,9 @@ void event_rate_calc( struct kmc_type *obj ) {
   stick = 1.0;
   surf = 1e-20;
   cste = sqrt( na/(2*pi*kb) );
-  //u = 1.66e-27;
   f0 = obj->event.ptr_f0;
   eb = obj->event.ptr_ebarrier;
 
-/*
-  for ( i= 0; i < obj->tot_sites; i++ ) {
-      obj->ptr_rate[ i ] = 0.0;
-      j0 = obj->ptr_nneig[ i ] - 1;
-      nvj = obj->ptr_neig[ j0 ];
-      for ( jv = 1; jv <= nvj; jv++ ) 
-          obj->ptr_event_rate[ j0 + jv ];
-  }
-*/
 
   for ( i= 0; i < obj->tot_sites; i++ ) {
 
@@ -325,14 +315,14 @@ void event_rate_calc( struct kmc_type *obj ) {
       if ( save_site != 0 ) is = save_site;
 
       id   = obj->ptr_site[ is ];
-      ievt = 0;
       j0   = obj->ptr_nneig[ is ] - 1;
       nvj = obj->ptr_neig[ j0 ];
+      ievt = 0;
 
       // How many event has the site "is"...
       for ( jevt = 0; jevt < obj->event.nevent; jevt++ ) {
           if ( obj->event.ptr_i_state[ jevt ] == id ) {
-             ievt = ievt + 1;
+             ievt += 1;
 	     obj->ptr_event_site[ j0 + ievt ] = jevt;
           }
       }
@@ -349,17 +339,24 @@ void event_rate_calc( struct kmc_type *obj ) {
           if ( eb[ ievt ] < 0.0 ) {
 
              id = obj->event.ptr_f_state[ ievt ];
-             flux = cste * surf / sqrt( obj->ptr_masse[ id ]* u * obj->temp )*obj->ptr_pressure[ id ];
+
+             //if ( obj->ptr_site[ is ] != obj->event.ptr_i_state[ ievt ] )
+             //  printf( " PB: %d != %d : %d %d\n", obj->ptr_site[ is ], obj->event.ptr_i_state[ ievt ], is, ievt );
+
+             flux = cste * surf / sqrt( obj->ptr_masse[ id ]* u * obj->temp ) * obj->ptr_pressure[ id ];
              obj->ptr_event_rate[ j0 + jevt ] = flux*stick;
              //printf( " %d flux %f %e %e %f %e %f \n",id, flux, cste, surf, obj->ptr_masse[id], u, obj->ptr_pressure[id] );
              
           } else {
+
              //obj->ptr_event_rate[ j0 + jevt ] = obj->event.ptr_ebarrier[ ievt ]; 
              obj->ptr_event_rate[ j0 + jevt ] = f0[ ievt ]*exp( - eb[ ievt ]/kt );
+
           }
 
           obj->ptr_rate[ is ] += obj->ptr_event_rate[ j0 + jevt ];
           //printf( " %d event %d %d %f %f \n", i,jevt, ievt, obj->ptr_event_rate[ j0 + jevt ], eb[ ievt ] );
+
       }
       //printf( " *** %d %f\n", i, obj->ptr_rate[ i ] );
 
@@ -373,7 +370,7 @@ void event_rate_calc( struct kmc_type *obj ) {
 
 void choose_event( struct kmc_type *struc, int *isite, int *ievent ) {
 
-  int i, j0, jn, j, nvj;
+  int i, j0, jn, j, nevt;
 
    *isite = 0;
    *ievent = 0;
@@ -391,9 +388,10 @@ void choose_event( struct kmc_type *struc, int *isite, int *ievent ) {
    for (i = 0; i < struc->tot_sites; i++) {
 
       j0 = struc->ptr_nneig[ i ] - 1;
-      nvj = struc->ptr_neig[ j0 ];
+     // nvj = struc->ptr_neig[ j0 ];
+      nevt = struc->ptr_nevt[ i ];
 
-      for ( jn = 1; jn <= nvj; jn++) {
+      for ( jn = 1; jn <= nevt; jn++) {
 
           *ievent = jn;
           rsum += evt_rate[ j0 + jn ];
@@ -422,7 +420,8 @@ void event_applied( struct kmc_type *obj, int *is, int *jn ) {
   jevt = obj->ptr_event_site[ j0 + *jn ];
 
   if ( obj->ptr_site[ *is ] != obj->event.ptr_i_state[ jevt ] ) 
-   printf( " Problem site state not correspond to initial state event\n" );
+   printf( " %d %d Problem site state (%d) not correspond to initial state (%d) event %d | %d \n", 
+           *is, *jn, obj->ptr_site[ *is ], obj->event.ptr_i_state[ jevt ], jevt, obj->ptr_nevt[ *is ] );
 
   obj->ptr_site[ *is ] = obj->event.ptr_f_state[ jevt ];
   //exit(1);
@@ -432,11 +431,22 @@ void event_applied( struct kmc_type *obj, int *is, int *jn ) {
 void analyse( struct kmc_type *obj ) {
 
   int i;
+
+  if ( obj->nprop == 0 ) return;
+
   obj->ptr_prop[ 0 ] = 0.0;
   for ( i = 0; i < obj->tot_sites; i++ ) 
       if ( obj->ptr_site[ i ] == 1 ) obj->ptr_prop[ 0 ] += 1;
 
   obj->ptr_prop[ 0 ] /= (double)obj->tot_sites;
+
+  if ( obj->nprop == 1 ) return;
+  
+  obj->ptr_prop[ 1 ] = 0.0;
+  for ( i = 0; i < obj->tot_sites; i++ )
+      if ( obj->ptr_site[ i ] == 2 ) obj->ptr_prop[ 1 ] += 1;
+
+  obj->ptr_prop[ 1 ] /= (double)obj->tot_sites;
 
 }
 // .................................................................................................

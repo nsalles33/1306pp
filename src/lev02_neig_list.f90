@@ -118,7 +118,6 @@
 
       integer( c_int ), pointer :: nneig(:), neig(:)
       call link_int1_ptr( struc% ptr_nneig, nneig, struc% tot_sites )
-      !call link_int2_ptr( struc% ptr_neig, neig, 10, struc% tot_sites )
       call link_int1_ptr( struc% ptr_neig, neig, nvois*struc% tot_sites )
 
       nx = struc% nsites(1)
@@ -126,9 +125,10 @@
       nz = struc% nsites(3)
       nxy = nx*ny
       write(*,*) " Neig_list 3D...",nx,ny,ny*(nx-1),nz
-
       !
-!  :: System 3D
+      !
+      !  ::: System 3D
+      !
       neig( : ) = 0 
       do i = 0, struc% tot_sites - 1
          id = i + 1

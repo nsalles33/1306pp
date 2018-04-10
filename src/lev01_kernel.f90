@@ -75,6 +75,7 @@ Program Kernel
   !call system_clock( t_start )
   !
   nstep = 0
+  sys% step = nstep
   if ( MODULO( nstep, sys% freq_write ) == 0 ) &
     call analysis( sys )
   call print_state( sys, nstep, u0 )
@@ -82,6 +83,7 @@ Program Kernel
   do while ( nstep < sys% max_step )
      !
      nstep = nstep + 1
+     sys% step = nstep
      call algorithm( sys )
      !
      if ( sys% conv == 1 ) exit 

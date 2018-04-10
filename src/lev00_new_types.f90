@@ -87,7 +87,8 @@
                                                          max_time,    &
                                                          temp, kt,    &
                                                          per100, f0,  &
-                                                         scale
+                                                         scale,       &
+                                                         step
       !
       type( c_ptr )  ::  ptr_site, ptr_nneig, ptr_nevt, ptr_neig, ptr_event_site,    &
                          ptr_spec, ptr_rate, ptr_prop, ptr_event_rate, ptr_pressure, &

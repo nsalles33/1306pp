@@ -7,24 +7,24 @@ name_simulation "KMC test"
 verbose			0
 system_dimension	2
 #Nber_node_1dim		128
-nsite_x			128
-nsite_y			128
+nsite_x			100 
+nsite_y			100 
 nsite_z			1  
 species			0
-init_config		none	
+init_config		one    	0.05
 
 
-shared_library	"shared_lib/lib_sys02c.so"
+shared_library	"shared_lib/lib_sys01.so"
 
-node_prop 	2
+node_prop 	1
 input_event "lib_event.dat"
 algorithm	BKL
 temperature	300.0
-partial_pressure	1
+partial_pressure	0
 
-nstep		50000
-freq_write 	1000	
-calc_properties	1
+nstep		100000
+freq_write 	1000 	
+calc_properties	2
 bound_condition	p p f
 
 #

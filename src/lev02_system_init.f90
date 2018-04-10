@@ -28,7 +28,7 @@
       call read_input( struc )
       !print*, "... sortie de read_input -> print_kmc_type"
          call print_kmc_type( struc )
-
+      !
       !  ::: READ EVENT FILE
       !
 #ifdef SHARED_LIB 
@@ -44,14 +44,14 @@
 #endif
       !call read_event_hub( struc )
       !
-        call print_event( struc% event )
+      !  call print_event( struc% event )
+      !stop "system_init..."
       !
       !  ::: Initialization of node State
       !      This step depend on system...
       call distribution_state ( struc ) ! This routine is specific for vacancies diffusion
       !
       call neig_list( struc )
-      !stop "system_init..."
       !
     end subroutine Init_system
 ! =================================================================================================
@@ -171,7 +171,7 @@
      implicit none 
      !
      type( KMC_type ), intent( inout ) :: struc
-     integer( c_int )                  :: i
+     integer( c_int )                  :: i, n
      real( c_double )                  :: rnd
      !
      integer( c_int ), dimension(:), pointer :: site
@@ -186,14 +186,18 @@
         !
         call set_random_seed()
         !
+        n = 0
         do i = 1,struc% tot_sites
            call random_number( rnd ) 
            if ( rnd <= 1 - struc% per100 ) then
               site( i ) = 1
            else
               site( i ) = 0
+              n = n + 1
            endif
         enddo
+        !
+        print*, " Random '1' : ", n
         !
      else if ( trim(struc% init_mod) == "species" ) then
         !
@@ -209,6 +213,13 @@
         do i = 1, struc% tot_sites
            site( i ) = 0
            !print*, " site: ", i, " activity :", site( i )
+        enddo
+        !
+     else if ( trim(struc% init_mod) == "one" ) then
+        !
+        do i = 1, struc% tot_sites
+           site( i ) = 1
+           if ( i == (struc% tot_sites/2 + struc% nsites(1)/2) )  site( i ) = 0
         enddo
         !
      endif
